@@ -6,7 +6,24 @@ library(CEMS)
 
 shinyServer(function(input, output, session) {
   
-  
+  observeEvent(input$usgssend, function() {
+    
+      mongo <- connectMongo(DB = "scconfig", port = 30000)
+    
+      key <- getAllData(mongo, "key")
+      key <- as.character(key[1,1])
+      destroyMongo(mongo)
+      topic <- paste(key, "usgsCollector", sep = "/")
+      
+      .jinit("www/MQTTPublisher.jar")
+      mqtt <- .jnew("mqtt/MqttSend")
+      
+      msg <- '{}'
+    
+      mqtt$SEND("127.0.0.1", "1883", topic, msg)  
+
+      }
+  })
   
   
   ########################################################################  ########################################################################
@@ -17,7 +34,8 @@ shinyServer(function(input, output, session) {
     textInput("publicapi", label = h4("공공데이터 API키:"), value = "g2PYYeRkm4XwNs5SkT%2BEm6ZWuLXQCBNLJ4jdEH43rTuU0WjKjo%2B2IBtyAr1EJmS2QqsImnnT3RCr5RNBZ0d25A%3D%3D", width = '100%'),
       textInput("publicname", label = h4("공공데이터 이름:"), value = "대기정보데이터"),
     textInput("publicperiod", label = h4("데이터 업데이트 주기(단위: 시간):"), value = "1"),
-      actionButton("publicsend", label = "등록")
+      actionButton("publicsend", label = "등록"),
+      actionButton("usgssend", label = "USGS test")
     )
   })
   
