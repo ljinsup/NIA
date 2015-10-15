@@ -13,16 +13,17 @@ shinyServer(function(input, output, session) {
       key <- getAllData(mongo, "key")
       key <- as.character(key[1,1])
       destroyMongo(mongo)
-      topic <- paste(key, "usgsCollector", sep = "/")
+      topic <- paste(key, "usgsCollect", sep = "/")
       
       .jinit("www/MQTTPublisher.jar")
       mqtt <- .jnew("mqtt/MqttSend")
       
       msg <- '{}'
-    
+      progress <- Progress$new()
+      progress$set(message = paste(topic, msg, sep = " + "))
+      
       mqtt$SEND("127.0.0.1", "1883", topic, msg)  
 
-      }
   })
   
   

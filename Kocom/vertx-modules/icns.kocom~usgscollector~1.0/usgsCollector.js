@@ -27,9 +27,9 @@ eventbus.registerHandler("usgsCollector", function (message, replier) {
 //    var period = message.period * 1000 * 60 * 60; // transfer hour to millisecond
 //    var time = new Date();
 
-    var client = vertx.createHttpClient().host("earthquake.usgs.gov"); // make connect(to api server)
+    var client = vertx.createHttpClient();
 
-    client.getNow("earthquakes/feed/v1.0/summary/all_hour.atom", function (resp) {
+    client.getNow("earthquake.usgs.gov", "/earthquakes/feed/v1.0/summary/all_hour.atom", function (resp) {
         var body = "";
         resp.dataHandler(function (chunk) {
             body += chunk;
