@@ -1,0 +1,9 @@
+{
+    "main" : "publicDataCollector.js",
+    "worker" : true,
+    "system" : true,
+    "description" : "This module Collecting publicData(http://www.data.go.kr)",
+    "keyworld" : ["publicdata", "collector", "mongodb", "xmltojson"],
+    "developer" : "ShicNova(Yun Hyeon-Ki)",
+    "homepage" : "http://yhkhy.blog.me"
+}

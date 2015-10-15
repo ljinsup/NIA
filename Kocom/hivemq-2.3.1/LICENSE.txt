@@ -1,0 +1,131 @@
+HIVEMQ END USER LICENSE AGREEMENT
+
+BY DOWNLOADING, INSTALLING, OR USING THE SOFTWARE, YOU (THE INDIVIDUAL OR LEGAL ENTITY) AGREE TO BE BOUND BY THE TERMS OF THIS END USER LICENSE AGREEMENT (“EULA”). IF YOU DO NOT AGREE TO THE TERMS OF THIS EULA, YOU MUST NOT DOWNLOAD, INSTALL, OR USE THE SOFTWARE, AND YOU MUST DELETE OR RETURN THE UNUSED SOFTWARE TO THE VENDOR FROM WHICH YOU ACQUIRED IT WITHIN THIRTY (30) DAYS AND REQUEST A REFUND OF THE LICENSE FEE, IF ANY, THAT YOU PAID FOR THE SOFTWARE.
+
+Information about dc-square GmbH:
+
+dc-square GmbH
+Schillerstraße 2
+D-84034 Landshut
+Germany
+ 
+
+Email: info@dc-square.de
+Phone: +49 871 9253623
+Fax: +49 871 9253629
+ 
+
+CEO: Christian Götz, Dominik Obermaier
+
+VAT-ID: DE283445184
+
+1. Definitions
+
+ 
+
+The following definitions shall apply to this Agreement:
+
+“Authorized Use” – the specified conditions and level at which the Licensee is authorized to run or execute the Software. That conditions and level is measured by the number of connected clients to one HiveMQ instance and right to extend the standard functionality.
+“DC-SQUARE” – dc-square GmbH or one of its subsidiaries.
+“Licensee” – the individual or legal entity who downloads, installs or uses the Software.
+“Licensor” – the dc-square GmbH
+“Personal Use” – means the non-commercial execution of the Software restricted to one instance per individual person and a maximum of 25 concurrent client connections.
+”Software” – means the HiveMQ computer program and all DC-SQUARE tools and documentation packaged with it.
+“Warranty Period” – one year, starting on the date the original Licensee is granted the license.
+“Order” means a purchase order or other ordering document issued by Licensee to DC-SQUARE that references and incorporates this EULA and is accepted by DC-SQUARE as set forth in Section 5.
+
+ 
+
+2.   License Grant
+
+ 
+
+2.1 Ownership and Scope of License
+
+The Software is owned by DC-SQUARE and is copyrighted and licensed, not sold.
+
+DC-SQUARE grants Licensee a nonexclusive and non-transferable license to use the Software up to the Authorized Use specified in the confirmation of the Order for which Licensee has paid the applicable fees. If no order Order was issued the software is restricted to Personal Use.
+
+This license applies to each copy of the Software that Licensee makes.
+
+ 
+
+2.2  Personal License
+
+DC-SQUARE offers a free-of-charge version of the Software with limited features and restricted amount of connections. No maintenance is available for this version. In case maintenance is being performed, this is only due to good-will, does not constitute any obligations for DC-SQUARE and might be stopped at any time. The use is limited to Personal Use only.
+
+3. Replacement, Updates, Fixes, and Patches
+
+3.1 Replacement
+
+If the Software is replaced by a replacement Software, the replaced Software’s license is promptly terminated.
+
+3.2 Updates, Fixes, and Patches
+
+When the Licensee receives an update, fix, or patch to a Software, the Licensee accepts any additional or different terms that are applicable to such update, fix, or patch that are specified in its license agreement. If no additional or different terms are provided, then the update, fix, or patch is subject solely to this Agreement.
+
+4. Termination
+
+4.1 Fixed Term Licenses
+
+If DC-SQUARE licenses the Software for a fixed term, Licensee’s license is terminated at the end of the fixed term, unless Licensee and DC-SQUARE agree to renew it.
+
+4.2 Term and Termination
+
+DC-SQUARE shall have the right to immediately terminate this License if Licensee fails to perform any obligation required of Licensee under this Agreement or if Licensee becomes bankrupt or insolvent. This License Agreement takes effect upon Licensee’s use of the software and remains effective until terminated. Licensee may terminate it at any time by destroying all copies of the Software and Documentation in its possession. It will also automatically terminate if Licensee fails to comply with any term or condition of this License Agreement.
+
+4.3  RETURN OR DESTRUCTION OF SOFTWARE UPON TERMINATION
+
+Upon termination of this License, Licensee shall return the original Software to DC-SQUARE and destroy all copies or destroy the original and all copies of the Software including partial copies and modifications. DC-SQUARE shall have a reasonable opportunity to conduct an inspection of Licensee’s place of business to assure compliance with this provision.
+
+5. Order
+
+Licensee Order is subject to this EULA. No Orders are binding on DC-SQUARE until accepted by DC-SQUARE. Orders for Software are deemed to be accepted upon DC-SQUARES’s delivery of the Software included in such Order. Orders issued to DC-SQUARE do not have to be signed to be valid and enforceable.
+
+6. Charges
+
+Charges are based on Authorized Use obtained, which is specified in the Order. DC-SQUARE does not give credits or refunds for charges already due or paid, except as specified elsewhere in this Agreement or Order.
+
+If Licensee wishes to increase its Authorized Use, Licensee must notify DC-SQUARE and pay any applicable charges.
+
+7. Support and subscription services
+
+Except as expressly specified in the Order, DC-SQUARE does not provide any support or subscription services for the Software under this EULA. You have no rights to any updates, upgrades or extensions or enhancements to the Software developed by DC-SQUARE unless you separately purchase DC-SQUARE support or subscription services. These support or subscription services are subject to the Services Terms.
+
+8. Warranties
+
+The licensed Software is provided “as is” without warranty of any kind express or implied, and to the maximum extent permitted by the Laws of the Federal Republic of Germany. Except as expressly provided in this clause, no warranty, condition, undertaking, liability or term, express or implied, statutory or otherwise, as to condition, quality, performance, functionality, infringement, merchantability, durability or fitness for purpose, is given or assumed by DC-SQUARE, licensor or its licensors and all such warranties, conditions, undertakings and terms are hereby excluded.
+
+ 
+
+9. LIMITATION OF LIABILITY
+
+9.1 Limitation of Liability
+
+Unless otherwise expressly stated herein, DC-SQUARE shall not be liable to Licensee for any consequential damages arising out of DC-SQUARE’s breach of this Agreement. In no event DC-SQUARE will be liable for lost of data, any lost profits, business interruption or other indirect, special, incidental, or consequential damages under any theory of liability.
+
+9.2    Further Limitations
+
+DC-SQUARE’s licensors shall have no liability of any kind under this EULA and DC-SQUARE’s liability with respect to any third party software embedded in the Software shall be subject to Section 9.1. You may not bring a claim under this EULA more than eighteen (18) months after the cause of action arises.
+
+10.   Miscellaneous Terms
+
+10.1    Payment Terms
+
+All payment terms are defined in the Order.
+
+10.2    Data Protection
+
+Customer acknowledges that correspondence and log files generated in conjunction with a request for Services may contain sensitive, confidential or personal information. Customer is solely responsible for taking the steps it considers necessary to protect such data, including obfuscating the logs or otherwise guarding such information prior to sending it to DC-SQUARE.
+
+10.3    Governing law
+
+Any dispute arising out of the contract or in connection with it shall be exclusively governed by the Laws of the Federal Republic of Germany. The CISG and the Choice of Law of Conflicts shall not apply.
+
+10.4    Consent to jurisdiction, venue and service
+
+Licensor consents and agrees that all legal proceedings relating to the subject matter of this Agreement shall be maintained in courts sitting within the Federal Republic of Germany, in the city of Landshut in Bayern and Licensor consents and agrees that jurisdiction and venue for such proceedings shall lie exclusively with such courts. Service of process in any such proceeding may be made by certified mail, return receipt requested, directed to the respective party at the address at which it is to receive notice as provided herein.
+
+10.5    Severability
+
+If any provision of this Agreement is held invalid or otherwise unenforceable, the enforceability of the remaining provisions shall not be impaired thereby.

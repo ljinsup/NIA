@@ -1,0 +1,201 @@
+== Changes
+
+
+=== 2.3.1 (2015-04-16)
+* Added a diagnostic mode for HiveMQ
+* HiveMQ can now block until a valid response is available from the pay-as-you-go server
+* Fixed the @Cached Annotation from the plugin system and caching works again
+* Fixed a bug where an exception was logged when HiveMQ was shutdown, while connected to a cluster
+* Fixed an issue which caused unnecessary latency on QoS 1 and 2 messages
+* Fixed a ConcurrentModificationException which was caused when subscribing and unsubscribing to topics at the same time
+* Fixed an issue on Windows where network interfaces could not be read properly in rare circumstances
+* Fixed a race condition when checking permissions via the plugin system on Publish and Subscribe messages
+* Removed chatty in-flight size warning if the in-flight windows was disabled
+
+
+=== 2.3.0 (2015-03-05)
+
+* Removed Infinispan
+* Backported HiveMQ 3 cluster
+* Added new persistence layer which scales much better for high-throughput scenarios
+* Improvements in the CPU consumption for many topic subscriptions
+* Improved validations for empty topics
+* Traffic improvements when changing pay-as-you-go price categories very often
+* Fixed a bug in the PublishDispatcher which didn't respect retained messages
+* Fixed a bug where onDisconnect callbacks could be called multiple times
+* Fixed an edge case bug where clients don't get disconnected on invalid CONNECT messages (username not set but password set)
+* Fixed a bug in a MQTT decoder which didn't read messages correctly in rare circumstances
+* Fixed client take-over bug in the cluster which didn't disconnect clients with the same ID on other cluster nodes
+* Fixed a bug where HiveMQ refused to build a cluster when not every node has a valid license
+* Fixed a bug where empty topics were allowed to subscribe and publish for MQTT 3.1.1
+* Fixed a bug where HiveMQ didn't disconnect a client when the username was empty but the password wasn't in a CONNECT message
+* Improved the cluster chapter in the documentation
+* Added new examples for the new cluster in the "conf/examples" folder of the HiveMQ package
+
+
+
+=== 2.2.1 (2015-02-12)
+
+* Fixed an issue that caused HiveMQ to not handle topic names with more than 255 characters properly
+* Fixed a bug where HiveMQ accepted CONNECT with password but without username
+* HiveMQ does now accept a single / as topic
+* Clients that sent a PUBLISH message with a topic that contained a wild card, are now disconnected immediately.
+* Fixed a bug where topics with wild cards as the only character in its topic tree level have been accepted
+* Improvements in cluster stability
+* Fixed a bug where endless message routings in clusters can occur in rare circumstances
+* Fixed a bug where the OnDisconnect callback was executed two times on graceful disconnect
+* Improved pay-as-you-go communication
+* Fixed a bug where LWT messages were not sent properly with huge topic sizes
+
+=== 2.2.0 (2014-12-17)
+
+* This HiveMQ version supports the new pay-as-you-go licensing (https://payg.hivemq.com). This allows you to use HiveMQ with unlimited connections without pre-paying for anything.
+* Fixed a rare ConcurrentModificationExceptions when clients send MQTT UNSUBSCRIBE messages in a cluster
+* HiveMQ now prints a unique HiveMQ ID when using with the pay-as-you-go service
+* Stability and memory improvements
+
+=== 2.1.1 (2014-11-24)
+
+* It's now possible to use HiveMQ as a windows service. See http://www.hivemq.com/windows-service for more details.
+* Fixed a race condition which caused different bugs in edge cases or under high load. This caused NullPointerExceptions in the plugin system like for OnPublishReceivedCallbacks.
+* Fixed a bug that some of the lowlevel callbacks wouldn't be called
+* Fixed a bug where outgoing MQTT 3.1.1 PUBREL packets were resent with the DUP flag although this isn't allowed due to the MQTT 3.1.1 specification
+* Fixed MQTT 3.1.1 packet headers for bridges (contained dup flags if they were resent)
+
+=== 2.1.0 (2014-09-24)
+
+* HiveMQ SPI is now available in Maven Central
+* First Version of HiveMQ which can use the new pay-as-you-go license
+* Updated start script for debian-based linux
+* Plugin classpaths are now completely isolated
+* Added support for the MQTT 3.1.1 sessionPresent flag
+* Added a configuration option to change the LWT send behaviour to always send a LWT, even on graceful disconnections
+* Added support for secure communication between bridges (TLS)
+* Added support for client certificate authentication for bridges
+* Fixed a bug where some LWT messages were sent although the client disconnected gracefully
+* Fixed an issue with handling of CONNECT messages which are sent more than once. HiveMQ now disconnects every client which sends more than one CONNECT message.
+* Fixed various harmless errors in the log which occurred when a client disconnected abruptly
+* Fixed a rare regression where connections were counted more than once in the free trial version
+* Fixed a bug where retained messages could be sent to more than one client
+* Fixed a bug where the stored messages statistics calculation was wrong
+* Fixed a bug in the HiveMQ subscription store for custom plugins
+* Various memory and performance improvements
+* Various fixes and improvements in the user guide and plugin developer documentation
+
+=== 2.0.2 (2014-08-30)
+
+* Fixed a critical regression where Last Will and Testament Messages weren't delivered reliably
+
+=== 2.0.1 (2014-08-11)
+
+* Fixed a bug where the Subscription Store Service for plugins could lost messages after a HiveMQ reboot
+* Fixed a bug in the Subscription Store Service where current subscriptions were not returned from "getSubscriptions()"
+* Fixed a bug where QoS 2 messages could be lost after a HiveMQ reboot
+* Fixed various bugs which affected the in-flight handling of HiveMQ
+* Fixed a typo in the bridge schema definition file "bridge.xsd". "trustStore" is now spelled "truststore"
+* Fixed a bug which affected message ordering for resent in-flight messages
+* Fixed a bug in clustering where retained messages were sent to all subscribers on all nodes
+* Fixed a bug where UnmarshallingExceptions occured when using clustering
+* Fixed a few log messages where not all information was shown properly
+* Fixed a race condition which caused exceptions when misbehaving clients disconnected
+* Fixed an exception which could occur when the maximum limit of concurrent connections exceeded
+* Improved the error message when another application is already using the ports HiveMQ wants to use
+* Added the "messages.maxQueued" property to the default config file
+* Added more detailed tracing output for DEBUG and TRACE log levels
+* Added more information about misbehaving clients if errors occur (like IP address of the client) to the log
+* General stability improvements
+
+
+
+
+=== 2.0.0 (2014-06-02)
+
+* Added transparent MQTT 3.1.1 support
+* Backported MQTT 3.1.1 behaviour to MQTT 3.1: On overlapping subscriptions by one client, the highest QoS wins
+* Backported MQTT 3.1.1 behaviour to MQTT 3.1: Wildcard subscriptions ('#') do not include topics beginning with '$'. Formerly only the '$SYS/' topic was excluded
+* Bridging protocol is fully supported
+* Added support for scheduled callbacks
+* Fixed a bug where a wrong QoS was passed to the onInsufficientSubscribePermissionDisconnect callback
+* QoS and In-Flight handling was rewritten completely for improved performance
+* It's now possible to limit queue size of messages
+* Maximum in-flight message window is now restricted to 65535
+* Start scripts are now including JAVA_OPTS from the system
+* Changed $SYS topics to the $SYS topics specified here: https://github.com/mqtt/mqtt.github.io/wiki/SYS-Topics
+* Bridge Service for plugins added
+* $SYS Topic Service for plugins added
+* Experimental REST Service for plugins added
+* Improved clustering
+* Start script improvements
+* Squashed many nasty bugs
+* Added new metadata format
+* Improvements in many documentation chapters.
+* Improved general performance
+
+
+
+=== 1.5.0 (2014-03-03)
+
+* New Service APIs for plugins
+* New Debian Start script added
+* The default clientId limit is now 65535 instead of 23
+* Set default port for websockets to 8000 and default port for secure websockets to 8001
+* Fixed Bug where non-default Websockets network interface was ignored
+* Fixed a bug where duplicate QoS 1 and Qos 2 messages could be sent on slow mobile connections
+* Fixed a bug where HiveMQ disconnected clients after Exceptions in plugins although they should have remained connected
+* Many stability improvements on QoS 1 and Qos 2
+* Performance improvements when using plugins which intercept message delivery
+* General Performance improvements
+
+=== 1.4.4 (2014-01-26)
+
+* Standard MQT, MQTT over TLS, MQTT over Websockets and MQTT over Websockets + TLS can now be bound to different interfaces
+* Fixed a bug where HiveMQ could possibly disconnect clients with invalid CONNECT messages before sending the CONNACK
+* Fixed a bug where plugins with the same priority from the PluginRegistry were sorted in the wrong order
+* Fixed some bugs in the Permission Handling plugin mechanism
+* Fixed a bug in the plugin authentication mechanism where an illegal state could occur when using own authentication plugins
+* Disconnecting clients on unexpected error conditions is more robust now
+
+=== 1.4.3 (2013-12-05)
+
+* Fixed a critical bug where client id takeovers lost didn't update subscriptions
+* Fixed plugin loading mechanism of EmbeddedHiveMQ
+* Fixed a bug where persistent sessions were not cleaned properly on a cleanSession client connect
+
+=== 1.4.2 (2013-11-02)
+
+* Fixed a problem where archived log files could be moved to folders outside the log folder
+* Improved error message on startup if something went wrong with the SSL/TLS configuration
+* Added possibility to configure the secure transport protocol. Defaults to TLS.
+* Fixed a bug where subscribe messages were processed although the client already dropped the connection
+* Fixed example AWS EC2 cluster config
+* Improved readme file
+* Stability improvements
+
+=== 1.4.1 (2013-09-16)
+
+* HiveMQ now outputs the version on startup
+* Added mechanism to check for HiveMQ updates
+* Added support for Graphite metric prefixes. (Needed for using hosted Graphite solutions)
+* Stability improvements
+
+=== 1.4.0 (2013-08-21)
+
+* Added native support for Websockets and Secure Websockets
+* Official Plugin SDK available with this release (https://github.com/hivemq/hivemq-spi)
+* Fixed a bug where publishes with empty payload, which are meant to delete retained messages were not republished by the broker
+* HiveMQ can now be configured to allow client ids which are longer than 23 characters
+* Documentation is now distributed with HiveMQ
+* General performance and stability improvements
+
+=== 1.3.1 (2013-07-02)
+
+* Fixed a bug in wildcard handling of topics for unusual wildcard usage
+* Fixed a bug where the topic of retained messages contained wildcards
+* Fixed a bug where queuing of messages on QoS1 and Qos2 subscriptions with cleanSession=false did not work properly
+* Prettified logging output in case of HiveMQ is bound to all interfaces
+* Fixed a bug in the Linux/Unix run script where starting from a completely different folder did not work properly
+
+
+=== 1.3.0 (2013-06-13)
+
+* First public HiveMQ Release

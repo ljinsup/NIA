@@ -1,0 +1,4031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="Asciidoctor 0.1.3">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HiveMQ 2.3.1 - Plugin Developer Guide</title>
+<link rel="stylesheet" href="styles/iconic_hivemq.css">
+<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/3.1.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+<script src="http://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+<script>document.addEventListener('DOMContentLoaded', prettyPrint)</script>
+</head>
+<body class="article">
+<div id="header">
+<h1>HiveMQ 2.3.1 - Plugin Developer Guide</h1>
+<span id="author">Dominik Obermaier, Christian Götz</span><br>
+<span id="revnumber">version 1,</span>
+<span id="revdate">08-21-2013, User Guide for HiveMQ 2.3.1</span>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ol type="none" class="sectlevel1">
+<li><a href="#hivemqdocs_introduction">Introduction</a></li>
+<li><a href="#hivemqdocs_general_concepts">General Concepts</a></li>
+<li>
+<ol type="none" class="sectlevel2">
+<li><a href="#dependency-injection-chapter">Using Dependency Injection</a></li>
+<li><a href="#plugin-project-structure">Plugin Project Structure</a></li>
+<li><a href="#callback-registry-chapter">CallbackRegistry</a></li>
+<li><a href="#hivemqdocs_configuration_files">Configuration Files</a></li>
+<li><a href="#hivemqdocs_plugin_information">Plugin Information</a></li>
+<li><a href="#hivemqdocs_logging">Logging</a></li>
+<li><a href="#dont-block-chapter">Don&#8217;t block!</a></li>
+<li><a href="#caching-chapter">Caching</a></li>
+<li><a href="#hivemqdocs_plugin_isolation">Plugin Isolation</a></li>
+<li><a href="#hivemqdocs_miscellaneous">Miscellaneous</a></li>
+</ol>
+</li>
+<li><a href="#maven-archetype-chapter">Get started quickly with the Plugin Maven Archetype</a></li>
+<li>
+<ol type="none" class="sectlevel2">
+<li><a href="#hivemqdocs_what_is_a_maven_archetype">What is a Maven Archetype?</a></li>
+<li><a href="#hivemqdocs_creating_your_first_plugin_project_from_the_command_line">Creating your first Plugin Project from the command line</a></li>
+<li><a href="#hivemqdocs_creating_your_first_plugin_project_using_intellij_idea">Creating your first Plugin Project using IntelliJ IDEA</a></li>
+<li><a href="#hivemqdocs_creating_your_first_plugin_project_using_eclipse">Creating your first Plugin Project using Eclipse</a></li>
+</ol>
+</li>
+<li><a href="#maven-plugin-chapter">Development with the Maven Plugin</a></li>
+<li>
+<ol type="none" class="sectlevel2">
+<li><a href="#hivemqdocs_introduction_2">Introduction</a></li>
+<li><a href="#maven-plugin-functionality">Functionality</a></li>
+<li><a href="#maven-plugin-usage">Usage</a></li>
+<li><a href="#maven-plugin-conf">Configuration Options</a></li>
+<li><a href="#maven-plugin-ides">Workflow with common IDEs</a></li>
+</ol>
+</li>
+<li><a href="#callbacks-chapter">Callbacks</a></li>
+<li>
+<ol type="none" class="sectlevel2">
+<li><a href="#hivemqdocs_overview_of_all_callbacks">Overview of all Callbacks</a></li>
+<li><a href="#scheduled-callback-execution-chapter">Scheduled Callback Execution</a></li>
+</ol>
+</li>
+<li><a href="#auth-permission-chapter">Authentication and Authorization</a></li>
+<li>
+<ol type="none" class="sectlevel2">
+<li><a href="#hivemqdocs_client_authentication">Client Authentication</a></li>
+<li><a href="#client-authorization-chapter">Client Authorization</a></li>
+<li><a href="#hivemqdocs_guidelines_for_multiple_plugins">Guidelines for multiple plugins</a></li>
+</ol>
+</li>
+<li><a href="#services-chapter">Services</a></li>
+<li>
+<ol type="none" class="sectlevel2">
+<li><a href="#retained-message-store-service">Retained Message Store Service</a></li>
+<li><a href="#subscription-store-service">Subscription Store Service</a></li>
+<li><a href="#client-service">Client Service</a></li>
+<li><a href="#publish-service">Publish Service</a></li>
+<li><a href="#systopic-service">$SYS Topic Service</a></li>
+<li><a href="#bridge-manager-service">Bridge Manager Service</a></li>
+</ol>
+</li>
+<li><a href="#pack-deploy-chapter">Packaging and Deployment</a></li>
+</ol>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<!-- Piwik -->
+<script type="text/javascript">
+  var _paq = _paq || [];
+  _paq.push(["trackPageView"]);
+  _paq.push(["enableLinkTracking"]);
+
+  (function() {
+    var u=(("https:" == document.location.protocol) ? "https" : "http") + "://piwik.baycix.de/";
+    _paq.push(["setTrackerUrl", u+"piwik.php"]);
+    _paq.push(["setSiteId", "5"]);
+    var d=document, g=d.createElement("script"), s=d.getElementsByTagName("script")[0]; g.type="text/javascript";
+    g.defer=true; g.async=true; g.src=u+"piwik.js"; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<!-- End Piwik Code -->
+</div>
+</div>
+<div class="sect1">
+<h2 id="hivemqdocs_introduction">Introduction</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Since version 1.4, HiveMQ offers a <a href="https://github.com/hivemq/hivemq-spi">free and open source</a> plugin SDK with service provider interfaces. This allows everyone to extend HiveMQ and add custom functionality via plugins.</p>
+</div>
+<div class="paragraph">
+<p>With custom HiveMQ plugins, it&#8217;s easy to add functionality like writing messages to databases, integrate with other service buses, collect statistics, add fine-grained security and virtually anything you else you can imagine.</p>
+</div>
+<div class="paragraph">
+<p>Since version 1.5, there is even deeper integration to the HiveMQ core with the <em>HiveMQ Services</em> concept. See the <a href="#services-chapter">HiveMQ Services chapter</a> for more information.</p>
+</div>
+<div class="paragraph">
+<p>Plugin development for HiveMQ is as easy as writing a Java main method once you grasp the core concepts. This documentation covers all relevant topics to get you started as quickly as possible. If you prefer to learn from real world plugins, visit <a href="https://github.com/hivemq">the HiveMQ Github page</a> or use the <a href="#maven-archetype-chapter">Maven Archetype for plugins</a>.</p>
+</div>
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="hivemqdocs_general_concepts">General Concepts</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A HiveMQ plugin is essentially a Java JAR file which is dropped in into the <code>plugins</code> folder of the HiveMQ installation. HiveMQ utilizes the standard <a href="http://docs.oracle.com/javase/6/docs/api/java/util/ServiceLoader.html">Java Service Loader</a> mechanism <span class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnote_1" title="View footnote.">1</a>]</span>.</p>
+</div>
+<div class="sect2">
+<h3 id="dependency-injection-chapter">Using Dependency Injection</h3>
+<div class="paragraph">
+<p>The recommended way of developing plugins is by using <a href="http://en.wikipedia.org/wiki/Dependency_injection">Dependency Injection</a>. HiveMQ utilizes <a href="https://code.google.com/p/google-guice/">Google Guice</a> as dependency injection provider. Typically most plugins will use the <a href="http://atinject.googlecode.com/svn/trunk/javadoc/javax/inject/package-summary.html"><em>JSR 330</em> API</a> like the <code>javax.inject.Inject</code> annotation.</p>
+</div>
+<div class="paragraph">
+<p>HiveMQ plugins (and all dependent classes) can be written with <strong>constructor injection</strong>, <strong>field injection</strong> and <strong>method injection</strong>. Constructor injection tends to be the most convenient way as it allows maximum testability.</p>
+</div>
+<div class="paragraph">
+<p>It is also possible to use annotations from <a href="http://jcp.org/en/jsr/detail?id=250">JSR 250</a> aka <em>Lifecycle Management Annotations</em> in your plugin. You can annotate a method in your class with <code>@javax.annotation.PostConstruct</code> and <code>@javax.annotation.PreDestroy</code> to hook into the lifecycle.</p>
+</div>
+<table class="tableblock frame-all grid-all" style="width:100%; ">
+<caption class="title">Table 1. Commonly used annotations for HiveMQ plugins</caption>
+<colgroup>
+<col style="width:25%;">
+<col style="width:25%;">
+<col style="width:50%;"> 
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Target</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>@javax.inject.Inject</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Constructor, Field, Method (Setter)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Injects the object(s) specified.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>@javax.inject.Singleton</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Class, Method (Provider)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Defines that an object is a Singleton.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>@javax.annotation.PostConstruct</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Method</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Executes this method after all injection took place.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>@javax.annotation.PreDestroy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Method</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Executes shutdown logic when HiveMQs LifecycleManager shuts down. This is only the case when HiveMQ itself shuts down.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>@com.google.inject.Provides</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Method</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used for <a href="https://code.google.com/p/google-guice/wiki/ProvidesMethods">Provider Methods</a> defined in the <code>HiveMQPluginModule</code>.</p></td>
+</tr>
+</tbody>
+</table>
+<hr><div class="paragraph">
+<p>The following shows an example of a constructor injection in the <code>PluginEntryPoint</code> of the HiveMQ plugin. It also shows the use of a <code>javax.annotation.PostConstruct</code> annotation to execute a method after the injection (and the constructor call) is finished.</p>
+</div>
+<div class="listingblock">
+<div class="title">Constructor Injection and Lifecycle Example</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import org.apache.commons.configuration.Configuration;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+
+public class TestPlugin extends PluginEntryPoint {
+
+    private final Configuration configuration;
+
+    @Inject <i class="conum">1</i>
+    public TestPlugin(Configuration configuration) {
+        this.configuration = configuration;
+    }
+
+    @PostConstruct <i class="conum">2</i>
+    public void postConstruct() {
+
+        System.out.print(configuration.getString("myProperty"));
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Constructor Injection</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>JSR 250 Lifecycle method which runs after injections took place</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Don&#8217;t like dependency injection?</div>
+Although <strong>not</strong> recommended, it is possible to write HiveMQ plugins the old fashioned Java way without dependency injection. Please make sure that you have a no-argument constructor in your <code>PluginEntryPoint</code> subclass. Note that you won&#8217;t be able to use the <a href="#services-chapter">Services APIs</a> without dependency injection.
+</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="plugin-project-structure">Plugin Project Structure</h3>
+<div class="imageblock">
+<div class="content">
+<img src="images/plugin_structure.png" alt="Minimal Plugin Project Structure">
+</div>
+<div class="title">Figure 1. HiveMQ Plugin Structure</div>
+</div>
+<div class="paragraph">
+<p>For the most minimal HiveMQ plugin you need at least two different classes and a text file for the service loader mechanism:</p>
+</div>
+<div class="olist arabic">
+
+<ol class="arabic">
+<li>
+<p>A class which extends <code>com.dcsquare.hivemq.spi.HiveMQPluginModule</code></p>
+</li>
+<li>
+<p>A class which extends <code>com.dcsquare.hivemq.spi.PluginEntryPoint</code></p>
+</li>
+<li>
+<p>A textfile which resides in <em>META-INF/services</em> and its name is <em>com.dcsquare.hivemq.spi.HiveMQPluginModule</em></p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="title">Using the Maven Archetype</div>
+There is a <a href="#maven-archetype-chapter">Maven Archetype</a> available which generates all classes and files needed for a plugin.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="title">HiveMQPluginModule</div>
+<p>Your class which extends <code>com.dcsquare.hivemq.spi.HiveMQPluginModule</code> is responsible for <strong>bootstrapping your module</strong>. That means, it is responsible for the following things:</p>
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Defining where your configurations of the plugin come from (e.g. from a properties file, XML file, database,…).</p>
+</li>
+<li>
+<p>Define bindings for your dependency injection.</p>
+</li>
+<li>
+<p>Declaring a class which is your Plugin Entry Point. This class acts as your plugin business logic "main method".</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Using Guice Provider methods</div>
+You can use standard <a href="https://code.google.com/p/google-guice/wiki/ProvidesMethods">Guice provider methods</a> in your implementation of <code>com.dcsquare.hivemq.spi.HiveMQPluginModule</code>.
+</td>
+</tr>
+</table>
+</div>
+<hr><div class="paragraph">
+<p>The following shows the most simple implementation of <code>com.dcsquare.hivemq.spi.HiveMQPluginModule</code>.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example <code>com.dcsquare.hivemq.spi.HiveMQPluginModule</code> implementation</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.HiveMQPluginModule;
+import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import com.google.inject.Provider;
+import org.apache.commons.configuration.AbstractConfiguration;
+
+import static com.dcsquare.hivemq.spi.config.Configurations.noConfigurationNeeded;
+
+
+public class TestPluginModule extends HiveMQPluginModule {
+
+    @Override
+    public Provider&lt;Iterable&lt;? extends AbstractConfiguration&gt;&gt; getConfigurations() {
+        return noConfigurationNeeded(); <i class="conum">1</i>
+    }
+
+    @Override
+    protected void configurePlugin() {
+	<i class="conum">2</i>
+    }
+
+    @Override
+    protected Class&lt;? extends PluginEntryPoint&gt; entryPointClass() {
+        return TestPlugin.class; <i class="conum">3</i>
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>This is a convenient method from the <code>com.dcsquare.hivemq.spi.config.Configurations</code> util which defines that your plugin does not need any external configurations</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>You can wire your dependencies here with standard Guice bindings.</td>
+</tr>
+<tr>
+<td><i class="conum">3</i></td>
+<td>This is your plugins main entry class.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="title">PluginEntryPoint</div>
+<p>Your class which implements <code>com.dcsquare.hivemq.spi.PluginEntryPoint</code> can be seen as the "main method" of your plugin. The constructor and the <code>@PostConstruct</code> annotated method are called when the HiveMQ server starts up.</p>
+</div>
+<div class="paragraph">
+<p>You can use <a href="#dependency-injection-chapter">Dependency Injection</a> and inject all the dependencies you wired up in your <code>HiveMQPluginModule</code> subclass. It&#8217;s even possible to inject some HiveMQ specific objects like the <code>CallbackRegistry</code> or <code>Configuration</code>s.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example <code>com.dcsquare.hivemq.spi.PluginEntryPoint</code> implementation</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.PluginEntryPoint;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+
+public class TestPlugin extends PluginEntryPoint {
+
+    private final MyDependency dependency;
+
+    @Inject
+    public TestPlugin(MyDependency dependency) { <i class="conum">1</i>
+        this.dependency = dependency;
+    }
+
+    @PostConstruct
+    public void postConstruct() { <i class="conum">2</i>
+        dependency.doSomething();
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>You can inject any dependency with constructor injection.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>This method gets executed after the injections are done and the constructor was executed.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="title">META-INF/services/com.dcsquare.hivemq.spi.HiveMQPluginModule file</div>
+<p>To enable HiveMQ to detect your plugin as a plugin, a text file called <code>com.dcsquare.hivemq.spi.HiveMQPluginModule</code> has to be created in <em>META-INF/services</em>. The contents of the file is one line which contains the fully qualified class name of your <code>HiveMQPluginModule</code> subclass.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example of META-INF/services/com.dcsquare.hivemq.spi.HiveMQPluginModule contents</div>
+<div class="content monospaced">
+<pre>com.dcsquare.hivemq.testplugin.TestPluginModule</pre>
+</div>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="callback-registry-chapter">CallbackRegistry</h3>
+<div class="paragraph">
+<p>Typically most HiveMQ plugins implemented at least one <strong>Callback</strong>. See the <a href="#callbacks-chapter">Callbacks Chapter</a> for more information on the concrete callbacks.</p>
+</div>
+<div class="paragraph">
+<p>Registering your own callbacks is pretty easy from your <code>PluginEntryPoint</code> implementation. You can call <code>getCallbackRegistry()</code> to get the callback registry.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example of registering a callback</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.PluginEntryPoint;
+
+
+public class TestPlugin extends PluginEntryPoint {
+
+    public TestPlugin() {
+
+        getCallbackRegistry().addCallback(new MyPublishReceivedCallback());
+    }
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="title">Getting a reference to the callback registry in other classes</div>
+When you want to use the callback registry in other classes than your <code>PluginEntryPoint</code> class, you can just <a href="#dependency-injection-chapter">inject it</a>. If you don&#8217;t like to use dependency injection, you have to pass the <code>CallbackRegistry</code> manually.
+</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_configuration_files">Configuration Files</h3>
+<div class="paragraph">
+<p>Many non-trivial HiveMQ plugins need some kind of configuration. The datasources for these configurations can be very different for each plugin as some plugins use configuration files, other read the configuration from a database and some plugins don&#8217;t need any configuration at all.</p>
+</div>
+<div class="paragraph">
+<p>For configuration purposes, HiveMQ utilizes the fantastic <a href="http://commons.apache.org/proper/commons-configuration/">Apache Commons Configuration</a> library which has many built-in Configuration Providers for different datasources like config files and databases. Using these configuration providers from Commons Configuration allows you&#8201;&#8212;&#8201;the plugin developer&#8201;&#8212;&#8201;to focus on writing plugins instead of fiddling with reading properties files.</p>
+</div>
+<div class="paragraph">
+<p>When dealing with configurations, there are two useful utility classes available which offer convenient methods for configuration providers:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">com.dcsquare.hivemq.spi.config.Configurations</dt>
+<dd>
+<p>Contains utility methods for creating new configuration providers which reduce the boiler plate code drastically.</p>
+</dd>
+<dt class="hdlist1">com.dcsquare.hivemq.spi.util.PathUtils</dt>
+<dd>
+<p>Contains utility methods when dealing with file and folder locations relative to the HiveMQ directory.</p>
+</dd>
+</dl>
+</div>
+<div class="listingblock">
+<div class="title">Example of using configurations</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.HiveMQPluginModule;
+import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import com.google.inject.Provider;
+import org.apache.commons.configuration.AbstractConfiguration;
+
+import java.util.concurrent.TimeUnit;
+
+import static com.dcsquare.hivemq.spi.config.Configurations.newConfigurationProvider;
+import static com.dcsquare.hivemq.spi.config.Configurations.newReloadablePropertiesConfiguration;
+
+
+public class TestPluginModule extends HiveMQPluginModule {
+
+    @Override
+    public Provider&lt;Iterable&lt;? extends AbstractConfiguration&gt;&gt; getConfigurations() {
+        final AbstractConfiguration reloadableConfiguration =
+                newReloadablePropertiesConfiguration("myConfig.properties", 60, TimeUnit.SECONDS); <i class="conum">1</i>
+
+        return newConfigurationProvider(reloadableConfiguration); <i class="conum">2</i>
+    }
+
+    @Override
+    protected void configurePlugin() {
+    }
+
+    @Override
+    protected Class&lt;? extends PluginEntryPoint&gt; entryPointClass() {
+        return TestPlugin.class;
+    }
+}
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import org.apache.commons.configuration.Configuration;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+
+
+public class TestPlugin extends PluginEntryPoint {
+
+
+    private final Configuration configuration;
+
+    @Inject
+    public TestPlugin(Configuration configuration) { <i class="conum">3</i>
+        this.configuration = configuration;
+    }
+
+    @PostConstruct
+    public void postConstruct() {
+        System.out.println(configuration.getString("stringKey", "defaultValue")); <i class="conum">4</i>
+        System.out.println(configuration.getInt("myIntValueProperty", 10));
+    }
+}
+</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Here we are using a convenient utility method from the <code>Configurations</code> class to use a config file which is located in the plugin folder and reloaded every minute.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>This method from the <code>Configurations</code> class saves us some boilerplate.</td>
+</tr>
+<tr>
+<td><i class="conum">3</i></td>
+<td>Here we inject our <code>Configuration</code> object which holds all properties from all configuration providers.</td>
+</tr>
+<tr>
+<td><i class="conum">4</i></td>
+<td>Here we just ask the <code>Configuration</code> object for a specific property value. If no value was found, a default value is used. See <a href="http://commons.apache.org/proper/commons-configuration/">the Apache Commons Configuration documentation</a> for more information.</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_plugin_information">Plugin Information</h3>
+<div class="paragraph">
+<p>It is strongly recommended to annotate your <code>HiveMQPluginModule</code> with <code>com.dcsquare.hivemq.spi.plugin.meta.Information</code> for additional metadata about the plugin. HiveMQ uses these metadata for monitoring and information purposes. When starting HiveMQ with your plugin, HiveMQ will log your defined plugin name and version on startup.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+
+If you forget to add the @Information annotation to your <code>HiveMQPluginModule</code> implementation, HiveMQ will log a warning on startup.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Example of using @Information</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.HiveMQPluginModule;
+import com.dcsquare.hivemq.spi.plugin.meta.Information;
+
+@Information(
+        name = "My test plugin",
+        author = "John Doe",
+        version = "1.0",
+        description = "A test plugin to show the HiveMQ plugin capabilities")
+public class TestPluginModule extends HiveMQPluginModule {
+…
+}</code></pre>
+</div>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_logging">Logging</h3>
+<div class="paragraph">
+<p>For logging purposes, HiveMQ plugins are encouraged to utilize the excellent <a href="http://www.slf4j.org/">SLF4J API</a>. When using SLF4J, plugins don&#8217;t have to wrestle with logging configuration as the HiveMQ server takes care of it. No surprises here, just use the standard SLF4J API.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example of using a SLF4J Logger</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class TestPlugin extends PluginEntryPoint {
+
+    private static final Logger log = LoggerFactory.getLogger(TestPlugin.class); <i class="conum">1</i>
+
+    public TestPlugin() {
+
+        log.info("Hello, I'm logging here");
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Standard SLF4J Logger creation</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="dont-block-chapter">Don&#8217;t block!</h3>
+<div class="paragraph">
+<p>The single most important rule for all plugins is: <strong>Don&#8217;t block in callbacks. Never</strong>. If you can, use an <code>java.util.concurrent.ExecutorService</code> for everything which potentially blocks in callbacks. By the way: It&#8217;s also a great idea to use Connection Pools if you are dealing with databases.</p>
+</div>
+<div class="paragraph">
+<p>The following shows an example code which uses an <code>ExecutorService</code>.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example code for nonblocking actions</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.HiveMQPluginModule;
+import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import com.google.inject.Provider;
+import org.apache.commons.configuration.AbstractConfiguration;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static com.dcsquare.hivemq.spi.config.Configurations.noConfigurationNeeded;
+
+
+public class TestPluginModule extends HiveMQPluginModule {
+
+    @Override
+    public Provider&lt;Iterable&lt;? extends AbstractConfiguration&gt;&gt; getConfigurations() {
+        return noConfigurationNeeded();
+    }
+
+    @Override
+    protected void configurePlugin() {
+        bind(ExecutorService.class).toInstance(Executors.newCachedThreadPool()); <i class="conum">1</i>
+    }
+
+    @Override
+    protected Class&lt;? extends PluginEntryPoint&gt; entryPointClass() {
+        return TestPlugin.class;
+    }
+}
+
+- - - - - - - - - - - - - - - - - - - - -
+
+import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import com.dcsquare.hivemq.spi.callback.events.broker.OnBrokerStart;
+import com.dcsquare.hivemq.spi.callback.exception.BrokerUnableToStartException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import java.util.concurrent.ExecutorService;
+
+import static com.dcsquare.hivemq.spi.callback.CallbackPriority.HIGH;
+
+
+public class TestPlugin extends PluginEntryPoint {
+
+    private static final Logger log = LoggerFactory.getLogger(TestPlugin.class);
+
+    private final ExecutorService executorService;
+
+    @Inject
+    public TestPlugin(final ExecutorService executorService) { <i class="conum">2</i>
+        this.executorService = executorService;
+    }
+
+    @PostConstruct
+    public void postConstruct() { <i class="conum">3</i>
+        getCallbackRegistry().addCallback(new OnBrokerStart() { <i class="conum">4</i>
+            @Override
+            public void onBrokerStart() throws BrokerUnableToStartException {
+                executorService.submit(new Runnable() { <i class="conum">5</i>
+                    @Override
+                    public void run() {
+                        log.info("Starting long operation");
+                        try {
+                            Thread.sleep(5000); <i class="conum">6</i>
+                        } catch (InterruptedException e) {
+                            log.error("Error", e);
+                        }
+                        log.info("Stopping long operation");
+
+                    }
+                });
+            }
+
+            @Override
+            public int priority() {
+                return HIGH; <i class="conum">7</i>
+            }
+        });
+    }
+}
+</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Binding an ExecutorService to a cached ThreadPool</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Injecting the ExecutorService we bound before</td>
+</tr>
+<tr>
+<td><i class="conum">3</i></td>
+<td>After the injections are done this method gets executed</td>
+</tr>
+<tr>
+<td><i class="conum">4</i></td>
+<td>We add an anonymous inner class which implements the <code>OnBrokerStart</code> Callback</td>
+</tr>
+<tr>
+<td><i class="conum">5</i></td>
+<td>We submit a Runnable&#8201;&#8212;&#8201;which gets executed asynchronously&#8201;&#8212;&#8201;to the <code>ExecutorService</code></td>
+</tr>
+<tr>
+<td><i class="conum">6</i></td>
+<td>This is our long running method. We simulate it with a simple Thread.sleep.</td>
+</tr>
+<tr>
+<td><i class="conum">7</i></td>
+<td>This defines that our Callback has High Priority compared to other <code>OnBrokerStart</code> callbacks for HiveMQ.</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="caching-chapter">Caching</h3>
+<div class="paragraph">
+<p><a href="#dont-block-chapter">The single most important rule in HiveMQ plugins is: <strong>Don&#8217;t block</strong></a>. Under some circumstances you have to block, for example when you are waiting of responses from your database, a REST API or when reading something from the filesystem. If you are doing this in a callback which is called very often (like the <code>OnPublishReceivedCallback</code>), you most likely want to implement caching.</p>
+</div>
+<div class="paragraph">
+<p><strong>In general, all plugins are responsible for proper caching by themselves.</strong></p>
+</div>
+<div class="paragraph">
+<p>HiveMQ offers the convenient annotation <code>com.dcsquare.hivemq.spi.aop.cache.Cached</code> which caches the return values of methods. This annotation also respects the parameters you pass to the method and will only cache return values for method executions with the same parameters. You can define a duration how long the method return values are cached</p>
+</div>
+<div class="paragraph">
+<p>Here is an example how the method caching works in a plugin:</p>
+</div>
+<div class="listingblock">
+<div class="title">Example of a plugin which uses Caching</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import com.dcsquare.hivemq.spi.aop.cache.Cached;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import java.util.Date;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+
+public class TestPlugin extends PluginEntryPoint {
+
+    private static final Logger log = LoggerFactory.getLogger(TestPlugin.class);
+    private final ScheduledExecutorService scheduledExecutorService;
+
+    @Inject
+    public TestPlugin(ScheduledExecutorService scheduledExecutorService) { <i class="conum">1</i>
+        this.scheduledExecutorService = scheduledExecutorService;
+    }
+
+    @PostConstruct
+    public void postConstruct() {
+        scheduledExecutorService.scheduleAtFixedRate(new Runnable() { <i class="conum">2</i>
+            @Override
+            public void run() {
+                log.info(getDate().toString()); <i class="conum">3</i>
+            }
+        }, 1, 1, TimeUnit.SECONDS); <i class="conum">4</i>
+    }
+
+
+    @Cached(timeToLive = 10, timeUnit = TimeUnit.SECONDS) <i class="conum">5</i>
+    public Date getDate() {
+        return new Date();
+    }
+}
+</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Let&#8217;s assume the <code>ScheduledExecutorService</code> was bound in the <code>HiveMQPluginModule</code></td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>We are scheduling a new Runnable Task which gets executed at a fixed rate</td>
+</tr>
+<tr>
+<td><i class="conum">3</i></td>
+<td>We just output the the value from the <code>getDate()</code> method to verify this was actually cached</td>
+</tr>
+<tr>
+<td><i class="conum">4</i></td>
+<td>We are scheduling this task every second</td>
+</tr>
+<tr>
+<td><i class="conum">5</i></td>
+<td>Here we define that the result of the method has to be cached for 10 seconds.</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-important" title="Important"></i>
+</td>
+<td class="content">
+
+The caching with the <code>com.dcsquare.hivemq.spi.aop.cache.Cached</code> annotation only works on objects created by the Dependency Injection Container. That means if you instantiate a class with that annotation by yourself, the caching won&#8217;t work.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For more fine grained caching, we recommend to implement caching on your own.</p>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_plugin_isolation">Plugin Isolation</h3>
+<div class="paragraph">
+<p>Since HiveMQ version <strong>2.1.0</strong>, HiveMQ uses plugin isolation. That means, each plugin has its own classloader and resources and classes cannot be shared between plugins. This adds additional security for your plugin and avoids nasty bugs if you include the same libraries in different plugins.</p>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_miscellaneous">Miscellaneous</h3>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="title">Don&#8217;t use experimental APIs</div>
+Some APIs are marked with the annotation <code>@Experimental</code>. These APIs can be subject to change and you should prepare for updating your plugin with a new HiveMQ release. Typically these APIs aren&#8217;t documented in this plugin guide but can be found in the source code.
+</td>
+</tr>
+</table>
+</div>
+
+</div>
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="maven-archetype-chapter">Get started quickly with the Plugin Maven Archetype</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>So if you just read the theroretical parts of the documentation or you want to dive into the plugin development real quick, you should read this chapter carefully. It will be explained what a Maven Archetype is, how you can benefit from it and how to use it.</p>
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_what_is_a_maven_archetype">What is a Maven Archetype?</h3>
+<div class="paragraph">
+<p>A Maven archetype is a template tooling, which allows to create a template for a Maven project. This template can then be used to create a new Maven project. So in short the HiveMQ Plugin Archetype provides you with a fully functional HelloWorld plugin to get started with developing your own plugins. This is by far the simplest way to get started with plugin development.
+If you want to gain more insights on Maven and/or the Maven archetype, please refer to the offical <a href="http://maven.apache.org/guides/">Maven guides</a> and the <a href="http://maven.apache.org/archetype/">archetype guide</a>.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="title">Maven Central</div>
+All HiveMQ dependencies, including the maven archetype, are available in Maven central.
+</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_creating_your_first_plugin_project_from_the_command_line">Creating your first Plugin Project from the command line</h3>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Open a terminal and switch to the folder in which you want to create a new project folder with the plugin source files.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Project Structure</div>
+The generation process will create a folder with all the necessary files inside the directory in which the following command is executed.
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Make sure you have Apache Maven available (for instructions look <a href="http://www.tutorialspoint.com/maven/maven_environment_setup.htm">here</a>)</p>
+</li>
+<li>
+<p>Execute Archetype command</p>
+<div class="listingblock">
+<div class="title">Generate a new Maven project with the archetype</div>
+<div class="content monospaced">
+<pre class="prettyprint xml language-xml"><code>	mvn archetype:generate -DarchetypeGroupId=com.hivemq -DarchetypeArtifactId=hivemq-plugin-archetype -DarchetypeVersion=2.1.0</code></pre>
+</div>
+</div>
+
+</li>
+<li>
+<p>Specifiy the common Maven identifiers for the new project in the prompt: <code>GroupId</code>, <code>ArtifactId</code>, <code>Version</code></p>
+</li>
+<li>
+<p>Congrats, you have just created your first HiveMQ plugin :)</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Next Steps</div>
+If you want to learn more about the generated HelloWorld example, please read the provided JavaDoc. For information on how to run and debug your new plugin see <a href="#maven-plugin-chapter">Development with Maven Plugin</a>.
+</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_creating_your_first_plugin_project_using_intellij_idea">Creating your first Plugin Project using IntelliJ IDEA</h3>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Go to <code>File</code> &#8594; <code>New Project</code> and select <strong>Maven Module</strong></p>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-archetype/intellij-1.png" alt="Create new Maven Module">
+</div>
+
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>In the next step click <code>Add archetype&#8230;</code> and fill in the details</p>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Archetype Group Id: <code>com.hivemq</code></p>
+</li>
+<li>
+<p>Archetype Artifact Id: <code>hivemq-plugin-archetype</code></p>
+</li>
+<li>
+<p>Archetype Version: <code>2.1.0</code></p>
+</li>
+</ul>
+</div>
+
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-archetype/intellij-2.png" alt="Add Archetype">
+</div>
+
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Click <code>OK</code> and select the Archetype in the list</p>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-archetype/intellij-3.png" alt="Select Archetype and enter own GroupId" width="ArtifactId and Version">
+</div>
+
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Done! IntelliJ is now creating the project and resolving the Maven dependencies.</p>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-archetype/intellij-4.png" alt="Finished project">
+</div>
+
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Want to run your newly created plugin on HiveMQ?</div>
+The next chapter explains how to run and debug plugins within your IDE. Go directly to the <a href="#maven-plugin-IntelliJ">IntelliJ section</a>.
+</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_creating_your_first_plugin_project_using_eclipse">Creating your first Plugin Project using Eclipse</h3>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Make sure you have the <strong>Eclipse IDE for Java Developers</strong>, otherwise Maven is not included by default</p>
+</li>
+<li>
+<p>Go to <code>File</code> &#8594; <code>New</code> &#8594; <code>Project</code> and select <strong>Maven Project</strong></p>
+</li>
+<li>
+<p>In the next step click <code>Add archetype&#8230;</code> and fill in the details</p>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Archetype Group Id: <code>com.hivemq</code></p>
+</li>
+<li>
+<p>Archetype Artifact Id: <code>hivemq-plugin-archetype</code></p>
+</li>
+<li>
+<p>Archetype Version: <code>2.1.0</code></p>
+</li>
+</ul>
+</div>
+
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-archetype/eclipse-1.png" alt="Add  Archetype">
+</div>
+
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Click <code>Next</code>, enter the desired Group Id, Artifact Id, Version for your plugin and click <code>Finish</code></p>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-archetype/eclipse-2.png" alt="Select Archetype in list">
+</div>
+
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Done! Eclipse will create the project and resolve all dependencies!</p>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-archetype/eclipse-3.png" alt="Finished project">
+</div>
+
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Want to run your newly created plugin on HiveMQ?</div>
+The next chapter explains how to run and debug plugins within your IDE. Go directly to the <a href="#maven-plugin-eclipse">Eclipse section</a>.
+</td>
+</tr>
+</table>
+</div>
+
+</div>
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="maven-plugin-chapter">Development with the Maven Plugin</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This chapter introduces the HiveMQ Maven plugin, which is a great help for any developer throughout the development lifecycle of a HiveMQ plugin.</p>
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_introduction_2">Introduction</h3>
+<div class="paragraph">
+<p>The plugin must to be packaged as a JAR file (see <a href="#pack-deploy-chapter">Packaging &amp; Deployment</a>) and copied manually to the HiveMQ plugin folder (&lt;HiveMQHome&gt;/plugins) in order to initialize the plugin on HiveMQ startup. This process is very inconvenient and not suitable for a fast switching between developing and manual testing. Another set-back is that debugging can not be applied to a plugin in the way it would be possible with a normal Java application. The reason is that the plugin can not be debugged without a running HiveMQ instance.
+All these described scenarios are essential for an effective plugin development, and that&#8217;s why we created the HiveMQ Maven Plugin to solve these problems.</p>
+</div>
+<div class="paragraph">
+<p>The Maven plugin helps developers to</p>
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>easily run their developed plugin on HiveMQ for testing purposes</p>
+</li>
+<li>
+<p>successfully debug their plugin</p>
+</li>
+</ul>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="maven-plugin-functionality">Functionality</h3>
+<div class="paragraph">
+<p>The Maven plugin automates the above stated steps, which are necessary to run a plugin on a real HiveMQ instance. Therefore you need to have a HiveMQ instance located on your development machine, which the plugin can use to deploy the plugin under development to. When the Maven plugin is invoked it will create an ad-hoc plugin directory in the maven build directory (this can also be customized, see the <a href="#maven-plugin-conf">configration options</a>) and will move the plugin jar file to the newly created folder. If you want to test configuration files for your plugin, please put them in <code>src/main/resources</code>, because then they are copied to the ad-hoc plugins folder as well.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Plugin folder of HiveMQ, when working with the Maven Plugin</div>
+The plugin folder of the HiveMQ instance, used from the Maven Plugin, is <strong>not</strong> used. Plugins or configuration files located there won&#8217;t be used when starting HiveMQ from within the Maven Plugin.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Afterwards the HiveMQ located in the specified directory (need to be declared using the <a href="#maven-plugin-conf">configration options</a>) will be started with the ad-hoc plugin folder. The Maven plugin will then show the HiveMQ console output. This empowers plugin developers with an easy way for testing newly created plugins. Additionally it provides the capability to debug the plugin during runtime using the Java remote application debugging mechanism. Java Remote Debugging is a client/server concept, in which both parties, application (HiveMQ with plugin) and IDE, are able to be the server or the client. Each scenario brings other advantages and disadvantages:</p>
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p><strong>HiveMQ with Plugin: Server; IDE: Client</strong></p>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Advantage</p>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Easier handling, because HiveMQ can be started without IDE debugger being started first.</p>
+</li>
+</ul>
+</div>
+
+</li>
+<li>
+<p>Disadvantage</p>
+<div class="ulist">
+
+<ul>
+<li>
+<p>If the code you want to debug is executed at startup, then you have to be quick in starting the IDE client debugger, otherwise the code you wish to debug is already been passed through.</p>
+</li>
+</ul>
+</div>
+
+</li>
+</ul>
+</div>
+
+</li>
+<li>
+<p><strong>HiveMQ with Plugin: Client; IDE: Server</strong></p>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Advantage</p>
+<div class="ulist">
+
+<ul>
+<li>
+<p>It is possible to debug code at startup</p>
+</li>
+</ul>
+</div>
+
+</li>
+<li>
+<p>Disadvantage</p>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Before the HiveMQ can be started, your IDEs debugging process need to be up and running.</p>
+</li>
+</ul>
+</div>
+
+</li>
+</ul>
+</div>
+
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Both of these scenarios have a right to exist and can be switch through the <a href="#maven-plugin-conf">configuration options</a> of the Maven plugin. It is also possible to specify the port on which they connect and the host name of the server, if HiveMQ is running in client mode.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Best Practice</div>
+Use <code>CLIENT</code> mode, when you want to debug code in your <a href="#callbacks-chapter">callback</a> and only use the <code>SERVER</code> mode, when debugging the <a href="#plugin-project-structure">Plugin Module or Plugin Entry Point</a> is necessary.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>This was just a quick overview over Java Remote Debugging in the context of HiveMQ plugin development, for more insights see this <a href="http://www.ibm.com/developerworks/library/os-eclipse-javadebug/">link</a>.</p>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="maven-plugin-usage">Usage</h3>
+<div class="paragraph">
+<p>As an effective way to use the plugin, an own Maven profile attached to the Maven <code>package</code> goal has been proven to be a great workflow. This triggers the plugin to be ran on HiveMQ everytime the Maven <code>package</code> goal is executed and the profile <code>RunWithHiveMQ</code> is active. In order to make it work as described the following snippet has to be added to the <code>pom.xml</code> in the root folder of the plugin project. This is already part of the project if the provided <a href="#maven-archetype-chapter">Maven Archetype</a> was used. The only change which needs to be made is to provide the correct HiveMQ home folder.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">IDE Support</div>
+For more information on how to do this with you favorite IDE look <a href="#maven-plugin-ides">here</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">HiveMQ Maven Plugin Usage</div>
+<div class="content monospaced">
+<pre class="prettyprint xml language-xml"><code>&lt;project....&gt;
+...
+
+ &lt;profiles&gt;
+        &lt;profile&gt;
+            &lt;id&gt;RunWithHiveMQ&lt;/id&gt;
+            &lt;build&gt;
+                &lt;plugins&gt;
+                    &lt;plugin&gt;
+                        &lt;groupId&gt;com.dcsquare&lt;/groupId&gt;
+                        &lt;artifactId&gt;hivemq-maven-plugin&lt;/artifactId&gt;
+                        &lt;version&gt;1.0&lt;/version&gt;
+                        &lt;executions&gt;
+                            &lt;execution&gt;
+                                &lt;id&gt;hivemq&lt;/id&gt;
+                                &lt;phase&gt;package&lt;/phase&gt; <i class="conum">3</i>
+                                &lt;goals&gt;
+                                    &lt;goal&gt;hivemq&lt;/goal&gt;
+                                &lt;/goals&gt;
+
+                                &lt;configuration&gt;<i class="conum">1</i>
+                                    &lt;hiveMQDir&gt;
+                                        /Applications/hivemq <i class="conum">2</i>
+                                    &lt;/hiveMQDir&gt;
+                                &lt;/configuration&gt;
+
+                            &lt;/execution&gt;
+                        &lt;/executions&gt;
+                    &lt;/plugin&gt;
+                &lt;/plugins&gt;
+            &lt;/build&gt;
+        &lt;/profile&gt;
+    &lt;/profiles&gt;
+...
+&lt;/project&gt;
+</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>All <a href="#maven-plugin-config">configuration properties</a> for the Maven plugin have to be placed in here.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Please specifiy the HiveMQ home directory. If you have not downloaded HiveMQ yet, please download the <a href="http://www.hivemq.com/downloads/releases/latest">latest HiveMQ</a>.</td>
+</tr>
+<tr>
+<td><i class="conum">3</i></td>
+<td>Here you can change the Maven phase during which the plugin is executed, it only makes sense to do this in <code>package</code> or later phases, because during <code>package</code> the plugin jar file is generated.</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="maven-plugin-conf">Configuration Options</h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Do I need additional configuration for the Maven plugin?</div>
+In general, the Maven plugin has reasonable defaults, but sometimes it is necessary to adjust some settings or just to get an overview of the default settings. The HiveMQ directory configuration property is the only mandatory one.
+</td>
+</tr>
+</table>
+</div>
+<table class="tableblock frame-all grid-all" style="width:100%; ">
+<caption class="title">Table 2. Configuration Options</caption>
+<colgroup>
+<col style="width:20%;">
+<col style="width:20%;">
+<col style="width:20%;">
+<col style="width:40%;"> 
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top">Required</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code><strong>hivemqDir</strong></code></p></td>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>true</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>This need to be set to your local HiveMQ directory. If you have not downloaded HiveMQ yet, please download the <a href="http://www.hivemq.com/downloads/releases/latest">latest HiveMQ</a>.</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pluginJarName</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">{artifactId}-{version}.jar</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of the plugin jar file.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pluginDir</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">${project.build.directory}</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The directory in which your plugin jar file is located.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hivemqJar</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hivemq.jar</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of the HiveMQ jar file in the bin directory.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>verbose</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">This property specifies, whether the messages logged from HiveMQ to the console should be shown or not.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>noPlugins</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">When this is set to true, HiveMQ will start without using the plugin, which is currently under development. A possible use case would be to compare the behaviour of HiveMQ with and without the plugin.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>debugMode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SERVER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specifies the debug mode of the plugin. Valid values are <code>NONE</code>, <code>SERVER</code> and <code>CLIENT</code>. Use <code>NONE</code> for starting HiveMQ + plugin without debugging. When you want to debug the bootstrapping part of your plugin use <code>CLIENT</code>, otherwise user <code>SERVER</code>. For more insights about debug modes see the <a href="#maven-plugin-functionality">functionality</a> section. And make sure to <a href="#maven-plugin-ides">configure your IDE</a> corresponding to your debug mode.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>debugPort</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5005</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The debug port on which the debug server starts when in <code>SERVER</code> mode or the client connects to when in <code>CLIENT</code> mode.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>debugServerHostName</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">localhost</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">If the debugMode is <code>CLIENT</code>, through this property it is possible to specify the host name of the debug server (for example the machine your IDE is running on). This is only needed if you want to remotely debug your plugin on another machine, see also the <a href="#maven-plugin-functionality">functionality</a> section.</p></td>
+</tr>
+</tbody>
+</table>
+
+</div>
+<div class="sect2">
+<h3 id="maven-plugin-ides">Workflow with common IDEs</h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Prerequisites</div>
+You can use any plugin, where the HiveMQ Maven plugin is configured, which means that the <code>pom.xml</code> should contain the snippet shown <a href="#maven-plugin-usage">here</a>. The simplest method is to create your own plugin HelloWorld project with the provided <a href="#maven-archetype-chapter">Maven Archetype</a>. Be advised to change the HiveMQ home directory!
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="maven-plugin-IntelliJ">IntelliJ IDEA</h4>
+<div class="sect4">
+<h5 id="hivemqdocs_run_hivemq_with_plugin">Run HiveMQ with Plugin</h5>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Open the pom.xml and create a new configuration element <code>debugMode</code> in the Maven Plugin and set value to <code>NONE</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/run-intellij-1.png" alt="Run-Plugin-In-IntelliJ-Step-1">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Run Maven Goal <code>package</code> and make sure Profile <code>RunWithHiveMQ</code> is selected</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/run-intellij-2.png" alt="Run-Plugin-In-IntelliJ-Step-2">
+</div>
+
+</div>
+
+</li>
+</ul>
+</div>
+
+</div>
+<div class="sect4">
+<h5 id="hivemqdocs_debug_plugin_in_server_mode">Debug Plugin in Server Mode</h5>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Create new configuration element <code>debugMode</code> and set value to <code>SERVER</code>, Run Maven Goal <code>package</code> and make sure Profile <code>RunWithHiveMQ</code> is selected</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-server-intellij-1.png" alt="Debug-Plugin-In-IntelliJ-Server-Mode-Step-1">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Create a new Run Configuration</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-server-intellij-2.png" alt="Debug-Plugin-In-IntelliJ-Server-Mode-Step-2">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Select <code>Remote</code> Configuration</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-server-intellij-3.png" alt="Debug-Plugin-In-IntelliJ-Server-Mode-Step-3">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Make sure the Transport is set to <code>Socket</code>, Mode is set to <code>Attach</code> and the port is 5005.</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-server-intellij-4.png" alt="Debug-Plugin-In-IntelliJ-Server-Mode-Step-4">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Run the newly created Configuration</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-server-intellij-5.png" alt="Debug-Plugin-In-IntelliJ-Server-Mode-Step-5">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Wait until the Debugger Console opens and shows <code>Connected</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-server-intellij-6.png" alt="Debug-Plugin-In-IntelliJ-Server-Mode-Step-6">
+</div>
+
+</div>
+
+</li>
+</ul>
+</div>
+
+</div>
+<div class="sect4">
+<h5 id="hivemqdocs_debug_plugin_in_client_mode">Debug Plugin in Client Mode</h5>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Create new configuration element <code>debugMode</code> and set value to <code>CLIENT</code> and create a new Run Configuration</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-intellij-1.png" alt="Debug-Plugin-In-IntelliJ-Client-Mode-Step-1">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Select <code>Remote</code> Configuration</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-intellij-2.png" alt="Debug-Plugin-In-IntelliJ-Client-Mode-Step-2">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Make sure the Transport is set to <code>Socket</code>, Mode is set to <code>Listen</code> and the port is 5005.</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-intellij-3.png" alt="Debug-Plugin-In-IntelliJ-Client-Mode-Step-3">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Run the newly created Configuration</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-intellij-4.png" alt="Debug-Plugin-In-IntelliJ-Client-Mode-Step-4">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Wait until the Debugger Console opens and shows <code>Connected</code>, then run Maven <code>package</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-intellij-5.png" alt="Debug-Plugin-In-IntelliJ-Client-Mode-Step-5">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Wait until HiveMQ is started</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-intellij-6.png" alt="Debug-Plugin-In-IntelliJ-Client-Mode-Step-6">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Switch to the Debug window and check if it shows <code>Connected</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-intellij-7.png" alt="Debug-Plugin-In-IntelliJ-Client-Mode-Step-7">
+</div>
+
+</div>
+
+</li>
+</ul>
+</div>
+
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="maven-plugin-eclipse">Eclipse</h4>
+<div class="sect4">
+<h5 id="hivemqdocs_maven_goal_package">Maven Goal Package</h5>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Create new <code>Run Configuration</code> for Maven Goal</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/run-eclipse-1.png" alt="Run-Maven-Package-In-Eclipse-Step-1">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Insert Maven Goal <code>package</code> und Profile <code>RunWithHiveMQ</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/run-eclipse-2.png" alt="Run-Maven-Package-In-Eclipse-Step-2">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Click apply and you are done!</p>
+</li>
+</ul>
+</div>
+
+</div>
+<div class="sect4">
+<h5 id="hivemqdocs_run_hivemq_with_plugin_2">Run HiveMQ with Plugin</h5>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Open the pom.xml and create a new configuration element <code>debugMode</code> in the Maven Plugin and set value to <code>NONE</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/run-eclipse-3.png" alt="Run-Plugin-In-Eclipse-Step-1">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Click on the <code>Run</code> icon to run the above created Run Configuration.</p>
+</li>
+<li>
+<p>Done! HiveMQ is starting in the Maven console.</p>
+</li>
+</ul>
+</div>
+
+</div>
+<div class="sect4">
+<h5 id="hivemqdocs_debug_plugin_in_server_mode_2">Debug Plugin in Server Mode</h5>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Create new configuration element <code>debugMode</code> and set value to <code>SERVER</code>; Run Maven Goal <code>package</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-server-eclipse-1.png" alt="Debug-Plugin-In-Eclipse-Server-Mode-Step-1">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Create a new Debug Configruation: <code>Remote Java Application</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-server-eclipse-2.png" alt="Debug-Plugin-In-Eclipse-Server-Mode-Step-2">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Make sure Connection Type is <code>Socket Attach</code>, the host is <code>localhost</code>, the port is <code>5005</code> and then click <code>Debug</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-server-eclipse-3.png" alt="Debug-Plugin-In-Eclipse-Server-Mode-Step-3">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Change to the <code>Debug Perspective</code> and check if the debugger is running</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-server-eclipse-4.png" alt="Debug-Plugin-In-Eclipse-Server-Mode-Step-4">
+</div>
+
+</div>
+
+</li>
+</ul>
+</div>
+
+</div>
+<div class="sect4">
+<h5 id="hivemqdocs_debug_plugin_in_client_mode_2">Debug Plugin in Client Mode</h5>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Create a new Debug Configruation: <code>Remote Java Application</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-eclipse-1.png" alt="Debug-Plugin-In-Eclipse-Client-Mode-Step-1">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Make sure Connection Type is <code>Socket Listen</code>, the port is <code>5005</code> and then click <code>Debug</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-eclipse-2.png" alt="Debug-Plugin-In-Eclipse-Client-Mode-Step-2">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Change to the <code>Debug Perspective</code> and check if the debugger is listening</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-eclipse-3.png" alt="Debug-Plugin-In-Eclipse-Client-Mode-Step-3">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Create new configuration element <code>debugMode</code> and set value to <code>CLIENT</code>; Run the Maven Goal <code>package</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-eclipse-4.png" alt="Debug-Plugin-In-Eclipse-Client-Mode-Step-4">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Wait until HiveMQ is started</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-eclipse-5.png" alt="Debug-Plugin-In-Eclipse-Client-Mode-Step-5">
+</div>
+
+</div>
+
+</li>
+<li>
+<p>Change to the <code>Debug Perspective</code> and check if the debugger is connected</p>
+<div class="imageblock">
+<div class="content">
+<img src="images/maven-plugin/debug-client-eclipse-6.png" alt="Debug-Plugin-In-Eclipse-Client-Mode-Step-6">
+</div>
+
+</div>
+
+</li>
+</ul>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="callbacks-chapter">Callbacks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A core concept of HiveMQ plugin development is using the callbacks HiveMQ provides to execute custom business logic on events when they occur.</p>
+</div>
+<div class="paragraph">
+<p>To hook your callback implementations into HiveMQ, you can use the <a href="#callback-registry-chapter">Callback Registry</a>.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example of Registering a Plugin Callback</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import com.dcsquare.hivemq.spi.callback.lowlevel.OnPingCallback;
+import com.dcsquare.hivemq.spi.security.ClientData;
+
+import javax.annotation.PostConstruct;
+
+public class TestPlugin extends PluginEntryPoint {
+
+    @PostConstruct
+    public void postConstruct() {
+        getCallbackRegistry().addCallback(new OnPingCallback() { <i class="conum">1</i>
+            @Override
+            public void onPingReceived(ClientData clientData) {
+                System.out.println("Ping received");
+            }
+        });
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Registering the anonymous inner callback class</td>
+</tr>
+</table>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/callback_hierarchy.png" alt="Callback Hierarchy">
+</div>
+<div class="title">Figure 2. The Callback Hierarchy</div>
+</div>
+<div class="paragraph">
+<p>Every callback interface which can be implemented is a <em>Asynchronous</em> or <em>Synchronous</em> callback.</p>
+</div>
+<div class="paragraph">
+<p>The only difference which matters for plugin implementors is, that Synchronous Callbacks have priorities. Priorities define the order of the callback execution when there is more than one implementation of a callback. Use the constants from the <code>com.dcsquare.hivemq.spi.callback.CallbackPriority</code> class or define your own numerical return value. Lower values mean higher priority.</p>
+</div>
+<div class="paragraph">
+<p><strong>Synchronous callbacks</strong> are executed in order because they typically allow to interfere with the message processing/authentication/authorization mechanism of HiveMQ. Naturally, it is very important to <a href="#dont-block-chapter">prevent blocking</a> in Synchronous Callbacks.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/uml/synchronous_execution.png" alt="Synchronous Callback Execution">
+</div>
+<div class="title">Figure 3. Synchronous Callback Execution</div>
+</div>
+<div class="paragraph">
+<p><strong>Asynchronous Callbacks</strong> are executed in parallel. HiveMQ synchronizes after the parallel execution. That means, that a slow callback can block HiveMQ, although all other callbacks are already finished.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/uml/asynchronous_execution.png" alt="Asynchronous Callback Execution">
+</div>
+<div class="title">Figure 4. Asynchronous Callback Execution</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="title">Same priorities on callbacks</div>
+It&#8217;s not allowed that several implementations of the same callback interface have the same priority.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_overview_of_all_callbacks">Overview of all Callbacks</h3>
+<table class="tableblock frame-all grid-all" style="width:100%; ">
+<caption class="title">Table 3. Callbacks</caption>
+<colgroup>
+<col style="width:25%;">
+<col style="width:25%;">
+<col style="width:50%;"> 
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-center valign-top" colspan="3"><p class="tableblock"><strong><em>Broker Event Callbacks</em></strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onBrokerStart-callback">OnBrokerStart</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Called when the broker starts up. This happens before bootstrapping functionality like binding network interfaces.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onBrokerStop-callback">OnBrokerStop</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Called when the broker stops.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onStatisticsUpdate-callback">OnStatisticsUpdate</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Asynchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Called when the broker updates the statistics.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top" colspan="3"><p class="tableblock"><strong><em>MQTT Message Callbacks</em></strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onConnect-callback">OnConnectCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Called when a CONNECT message arrives.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onDisconnect-callback">OnDisconnectCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Asynchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Called when a DISCONNECT message arrives or a TCP connection loss occurs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onPublish-callback">OnPublishCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Called when a PUBLISH MQTT message arrives.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onSubscribe-callback">OnSubscribeCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Called when a MQTT SUBSCRIBE message arrives.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onUnsubscribe-callback">OnUnsubscribeCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Asynchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Called when a MQTT UNSUBSCRIBE message arrives.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top" colspan="3"><p class="tableblock"><strong><em>Security Callbacks</em></strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#afterLogin-callback">AfterLoginCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Asynchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Called when a client made and successful or unsuccessful login attempt.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onAuthentication-callback">OnAuthenticationCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Called after a CONNECT message arrived to check the credentials</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onAuthorization-callback">OnAuthorizationCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Returns <code>MqttTopicPermission</code>s when a client publishes or subscribes.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#onInsufficientPermissions-callback">OnInsufficientPermissionsCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Asynchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gets called when a client was disconnected due to insufficient permissions when publishing or subscribing.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#restrictionsAfterLogin-callback">RestrictionsAfterLoginCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Synchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gets executed after a CONNECT message arrives and the client was authenticated successfully.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top" colspan="3"><p class="tableblock"><strong><em>Other Callbacks</em></strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#scheduled-callback">ScheduledCallback</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Asynchronous</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gets executed periodically based on a quartz-style cron configuration.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect3">
+<h4 id="onBrokerStart-callback">OnBrokerStart</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Synchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.events.broker.OnBrokerStart</code> callback is useful for implementing custom startup logic and verifications. A common use case is for example verifying that a database connection can be obtained or that expected files are available and valid.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It is possible to throw a <code>com.dcsquare.hivemq.spi.callback.exception.BrokerUnableToStartException</code>. When the <code>onBrokerStart()</code> method of the <code>OnBrokerStart</code> callback implementation throws this exception, HiveMQ refuses to start.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onBrokerStop-callback">OnBrokerStop</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Synchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.events.broker.OnBrokerStop</code> callback is useful for implementing custom shutdown logic. A common use case is for example shutting down a database connection.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It&#8217;s not possible to interfere with HiveMQ directly with this callback.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onStatisticsUpdate-callback">OnStatisticsUpdate</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Aynchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.events.broker.OnStatisticsUpdate</code> callback is useful for working with the HiveMQ statistics. A common use case is for example publishing the statistics to a persistent store like a database.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It&#8217;s not possible to interfere with HiveMQ directly with this callback. You can update some statistics on the <code>com.dcsquare.hivemq.spi.statistics.HiveMQStatistics</code> object which gets passed to the <code>onStatisticsUpdate</code> method. In general, this callback should be used as a read-only callback, though.</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+
+This callback is only called once in a statistics update interval and <strong>only if</strong> statistics are enabled in HiveMQ.
+</td>
+</tr>
+</table>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onConnect-callback">OnConnectCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Synchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.events.OnConnectCallback</code> is useful for performing custom logic when a MQTT CONNECT message arrives. A common use case is for example logging when a client connects. Useful edge cases fort his callbacks are when you need to verify against some parts of the CONNECT message like the LWT part.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It is possible to throw a <code>com.dcsquare.hivemq.spi.callback.exception.RefusedConnectionException</code> to disconnect a client with a specific return code for the <code>CONNACK</code> message. A <code>CONNECT</code> message object and a <code>ClientData</code> object&#8201;&#8212;&#8201;which contains information about the credentials and the optional client authentication certificate&#8201;&#8212;&#8201;are passed as parameters to the <code>onConnect</code>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-important" title="Important"></i>
+</td>
+<td class="content">
+
+Although possible for scenarios with only one authentication resource, this callback is <strong>not</strong> designed to perform authentication, please use the <a href="#onAuthentication-callback">OnAuthenticationCallback</a> for this purpose.
+</td>
+</tr>
+</table>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onDisconnect-callback">OnDisconnectCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Asynchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.events.OnDisconnectCallback</code> is useful for performing custom logic when a client disconnects due to a MQTT DISCONNECT message or a TCP connection loss.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It&#8217;s not possible to interfere with HiveMQ directly with this callback. The <code>abruptAbort</code> parameter indicates if there was a TCP connection loss (<code>abruptAbort</code> = <code>true</code>) or a graceful disconnect with a MQTT DISCONNECT message.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onPublish-callback">OnPublishCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Synchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.events.OnPublishCallback</code> gets called when a PUBLISH MQTT message arrives. This callback is useful for interfering to PUBLISH messages, e.g. verify that the message has special payload semantics. <strong>Don&#8217;t use this callback for Topic based permissions</strong>.</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+
+This callback gets called very often. Please make sure you use proper caching and that you <a href="#dont-block-chapter">don&#8217;t block</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It&#8217;s possible to throw a <code>com.dcsquare.hivemq.spi.callback.exception.OnPublishReceivedException</code> when the published message is not valid from a business logic point of view. It&#8217;s possible to disconnect the publishing client by passing <code>true</code> as parameter to the <code>OnPublishReceivedException</code>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-important" title="Important"></i>
+</td>
+<td class="content">
+
+This callback is not meant to be used for topic restrictions. Please see the <a href="#client-authorization-chapter">Client Authorization Chapter</a> for more details. Also if more than on plugin is throwing an OnPublishReceivedException for the same callback, only the first one will be handled. Therefore the first exception decides, whether the client gets disconnected or not.
+</td>
+</tr>
+</table>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onPublishSend-callback">OnPublishSend</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Asynchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.events.OnPublishSend</code> callback gets called when an outgoing PUBLISH MQTT is going to be sent to a subscribing client.</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+
+This callback gets called very often. Please make sure you use proper caching and that you <a href="#dont-block-chapter">don&#8217;t block</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It&#8217;s not possible to interfere with HiveMQ directly with this callback.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onSubscribe-callback">OnSubscribeCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Synchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.events.OnSubscribeCallback</code> callback gets called when a MQTT SUBSCRIBE message arrives. Useful for validating SUBSCRIBE messages or logging subscriptions. This callback is not designed to be used for Authorization. Please see <a href="#client-authorization-chapter">the Authorization chapter</a> for more details.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It&#8217;s possible to throw a <code>com.dcsquare.hivemq.spi.callback.exception.InvalidSubscriptionException</code> when the SUBSCRIBE message is invalid. The client gets disconnected when the exception is thrown.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onUnsubscribe-callback">OnUnsubscribeCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Asynchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.events.OnUnsubscribeCallback</code> callback gets called when a MQTT UNSUBSCRIBE  message arrives.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It&#8217;s not possible to interfere with HiveMQ directly with this callback.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="afterLogin-callback">AfterLoginCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Asynchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.security.AfterLoginCallback</code> gets called when a client made a successful or unsuccessful login attempt. This happens when the client sent a CONNECT message before. The callback offers a method <code>afterSuccessfulLogin</code> for successful logins and a method <code>afterFailedLogin</code> for unsuccessful login attempts.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It&#8217;s not possible to interfere with HiveMQ directly with this callback.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onAuthentication-callback">OnAuthenticationCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Synchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.security.OnAuthenticationCallback</code> gets called after a CONNECT message arrives and handles the authentication of the client. Username/Password from the MQTT CONNECT message can be used to authenticate the client or when using client certificate authentication for the transport layer authentication, the client certificate can also be used to authenticate on the application layer.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+
+If your scenario allows this, you should use <a href="#caching-chapter">Caching</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>The <code>checkCredentials</code> method must return either <code>true</code> or <code>false</code>, depending if the authentication was successful. When the authentication wasn&#8217;t successful and you want to control the CONNACK MQTT message return code, you can throw a <code>AuthenticationException</code>. This has the side effect that all other plugins which implement authentication are ignored once the exception was thrown.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onAuthorization-callback">OnAuthorizationCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Synchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.security.OnAuthorizationCallback</code> is responsible for returning <code>com.dcsquare.hivemq.spi.topic.MqttTopicPermission</code>s. Everytime a specific action on a topic like publishing or subscribing is done by a client, the callback is executed to check if the client is allowed to do this.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-important" title="Important"></i>
+</td>
+<td class="content">
+
+This callback gets called very often, so make sure you use proper <a href="#caching-chapter">Caching</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>HiveMQ uses the returned <code>MqttTopicPermission</code>s to check if a client is allowed to do a specific action.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="onInsufficientPermissions-callback">OnInsufficientPermissionsCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Asynchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.security.OnInsufficientPermissionsCallback</code> gets called when a client was disconnected due to insufficient permissions when publishing or subscribing. At the time the callback gets executed the client was already disconnected, so this is an informational callback.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It&#8217;s not possible to interfere with HiveMQ directly with this callback.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="restrictionsAfterLogin-callback">RestrictionsAfterLoginCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Synchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.security.RestrictionsAfterLoginCallback</code> gets executed after a CONNECT message arrives and the client was authenticated successfully. This callback provides restrictions which affect only a specific client, e.g. throttling or maximum allowed MQTT message sizes.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>The callback returns a set of restrictions which are applied to the specific client.</p>
+</div>
+<hr>
+</div>
+<div class="sect3">
+<h4 id="scheduled-callback">ScheduledCallback</h4>
+<div class="paragraph">
+<div class="title">Type</div>
+<p>Asynchronous</p>
+</div>
+<div class="paragraph">
+<div class="title">Purpose</div>
+<p>The <code>com.dcsquare.hivemq.spi.callback.schedule.ScheduledCallback</code> gets executed periodically. See <a href="#scheduled-callback-execution-chapter">the Scheduled Callback Execution chapter</a> for more information.</p>
+</div>
+<div class="paragraph">
+<div class="title">Interfering with HiveMQ</div>
+<p>It&#8217;s not possible to interfere with HiveMQ directly with this callback.
+When the callback is added to the <a href="#callback-registry-chapter">Callback Registry</a>, a validation of the <a href="http://quartz-scheduler.org/api/2.2.0/org/quartz/CronExpression.html">quartz-style cron expression</a> will take place. If the expression is invalid, the callback won&#8217;t be executed.</p>
+</div>
+
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="scheduled-callback-execution-chapter">Scheduled Callback Execution</h3>
+<div class="paragraph">
+<p>While most of the callbacks for HiveMQ plugins are used for reacting to certain events, it is sometimes desirable to run some tasks based on a periodical schedule.</p>
+</div>
+<div class="paragraph">
+<p>With <a href="#scheduled-callback">ScheduledCallback</a>s it&#8217;s easy to implement plugin behaviour which occurs periodically, based on <a href="http://quartz-scheduler.org/api/2.2.0/org/quartz/CronExpression.html">quartz-style cron expressions</a>. This gives your plugins the possibility to run on regular intervals like <em>every minute</em> or <em>every day at midnight.</em> Even non-trivial intervals like <em>Every last friday of every month during the years from 2002 to 2017 at 15:15 and 20:30</em> can be represented. See the <a href="#quartz-style-cron-expressions-chapter">Quartz-Style Cron Expressions chapter</a> for more information.</p>
+</div>
+<div class="paragraph">
+<p>The scheduled callback executions are especially useful for tasks like:</p>
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Maintenance tasks</p>
+</li>
+<li>
+<p>Watchdog services</p>
+</li>
+<li>
+<p>Reconfiguration services</p>
+</li>
+<li>
+<p>Integration with other systems (especially in conjunction with the <a href="#publish-service">Publish Service</a>)</p>
+</li>
+<li>
+<p>Backup services</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_usage">Usage</h4>
+<div class="paragraph">
+<p>A <code>ScheduledCallback</code> is a callback which gets executed asynchronously. Like any other callback, you have to manually add a concrete <code>ScheduledCallback</code> to the <a href="#callback-registry-chapter">Callback Registry</a> at plugin startup time or at runtime.</p>
+</div>
+<div class="paragraph">
+<p>A <code>ScheduledCallback</code> consists of two methods:</p>
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p><code>cronExpression()</code>: This method returns the <a href="#quartz-style-cron-expressions-chapter">quartz-styled cron expression</a> to schedule the callback.</p>
+</li>
+<li>
+<p><code>execute()</code>: This method executes the actual code to run on every interval.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="title">Example of adding a scheduled callback</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import com.dcsquare.hivemq.spi.callback.registry.CallbackRegistry;
+import com.dcsquare.hivemq.spi.callback.schedule.ScheduledCallback;
+
+import javax.annotation.PostConstruct;
+
+class CallbackSchedulerMainClass extends PluginEntryPoint {
+
+
+    @PostConstruct
+    public void postConstruct() {
+
+        final CallbackRegistry callbackRegistry = getCallbackRegistry();
+
+        callbackRegistry.addCallback(new ScheduledCallback() {
+            @Override
+            public void execute() {
+                System.out.println("Executing");
+            }
+
+            @Override
+            public String cronExpression() {
+                // Every second
+                return "* * * * * ?";
+            }
+        });
+    }
+}</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+
+The <code>cronExpression()</code> method gets only called once when adding the callback to the <a href="#callback-registry-chapter">Callback Registry</a>. If you need to change the expression at runtime or if it is created dynamically, you have to <a href="#cron-expression-changes-runtime-chapter">reload it at runtime</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The cron expression will be evaluated when adding it to the Callback Registry and all callbacks with invalid expressions will be rejected.</p>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="quartz-style-cron-expressions-chapter">Quartz-Style Cron Expressions</h4>
+<div class="paragraph">
+<p>To allow maximum flexibility for scheduling callbacks, HiveMQ recognizes <a href="http://quartz-scheduler.org/api/2.2.0/org/quartz/CronExpression.html">quartz-style cron expressions</a>. This allows scheduling based on time intervals and dates.</p>
+</div>
+<table class="tableblock frame-all grid-all" style="width:100%; ">
+<caption class="title">Table 4. Examples of quartz-style cron expressions</caption>
+<colgroup>
+<col style="width:33%;">
+<col style="width:66%;"> 
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Expression</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>0/5 * * * * ?</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>every 5 seconds</em></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>0 0 0/2 * * ?</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>every 2 hours</em></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>0 0 0 * * ?</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>on midnight, every day</em></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>0 0/5 15 * * ?</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>every 5 minutes starting at 3:00 PM and ending at 3:55 PM, every day</em></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>0 15 11 ? * MON-FRI</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>every Monday, Tuesday, Wednesday, Thursday and Friday at 11:15 AM</em></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>0 15 10 ? * 6L</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>on the last Friday of every month at 10:15 AM</em></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+
+Learn more about Quartz Cron Expressions <a href="http://quartz-scheduler.org/api/2.2.0/org/quartz/CronExpression.html">here</a>.
+</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="cron-expression-changes-runtime-chapter">Cron expression changes at runtime</h4>
+<div class="paragraph">
+<p>The the return value of the <code>cronExpression()</code> method of a <code>ScheduledCallback</code> is only evaluated once after it was added to the <a href="#callback-registry-chapter">Callback Registry</a>. However, sometimes static cron expressions are not enough for your scheduled callbacks. Sometimes it&#8217;s desirable to (re-)load cron expressions from databases, configuration files, web services or other sources on demand.</p>
+</div>
+<div class="paragraph">
+<p>A reload of the cron expression of a <code>ScheduledCallback</code> can be triggered manually with the <code>reloadScheduledCallbackExpression(ScheduledCallback scheduledCallback)</code> method of the <code>CallbackRegistry</code>.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example of reloading a ScheduledCallback</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.PluginEntryPoint;
+import com.dcsquare.hivemq.spi.callback.registry.CallbackRegistry;
+import com.dcsquare.hivemq.spi.callback.schedule.ScheduledCallback;
+
+import javax.annotation.PostConstruct;
+
+class CallbackSchedulerMainClass extends PluginEntryPoint {
+
+
+    @PostConstruct
+    public void postConstruct() {
+
+        final CallbackRegistry callbackRegistry = getCallbackRegistry();
+
+        callbackRegistry.addCallback(new ScheduledCallback() {
+            @Override
+            public void execute() {
+
+                System.out.println("Business Logic Stuff");
+
+                callbackRegistry.reloadScheduledCallbackExpression(this); <i class="conum">1</i>
+            }
+
+            @Override
+            public String cronExpression() {
+                String expression = dynamicExpressionFromDatabase(); <i class="conum">2</i>
+
+                return expression;
+            }
+        });
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Trigger a manual reload of the expression, which calls the <code>cronExpression()</code> method after executing this callback</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Loads a dynamic expression</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="scheduled-callbacks-utils-chapter">Utils</h4>
+<div class="paragraph">
+<p>For convenience, HiveMQ offers some utilities for working with quartz-style cron expressions. The following utility classes are worth a look if you are working with cron expressions:</p>
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p><code>com.dcsquare.hivemq.spi.callback.schedule.ScheduleExpressions</code>: A utility class which offers constants for common cron expressions and some utility methods for calculating expressions.</p>
+</li>
+</ul>
+</div>
+
+</div>
+
+</div>
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="auth-permission-chapter">Authentication and Authorization</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>One of the many use cases for writing a HiveMQ plugin is the implementation of client authentication and authorization. The <a href="#callbacks-chapter">callbacks</a> enables the plugin developer among other things to completely customize the authentication and authorization behavior.</p>
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_client_authentication">Client Authentication</h3>
+<div class="paragraph">
+<p>The following sequence diagram shows an overview of what happens in the HiveMQ core, when a new client is trying to connect and how a plugin can interfere with it.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/uml/client_authentication.png" alt="Client Authentication Callbacks">
+</div>
+<div class="title">Figure 5. Execution flow of callbacks during and after the client authentication</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Default Behavior</div>
+When no plugin is present, all clients are authenticated successfully.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_implement_username_password_authentication">Implement username/password authentication</h4>
+<div class="listingblock">
+<div class="title">Example of an username/password authentication callback</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>public class UserAuthentication implements OnAuthenticationCallback {
+
+    Logger log = LoggerFactory.getLogger(UserAuthentication.class);
+
+    @Override
+    public Boolean checkCredentials(ClientCredentialsData clientData<i class="conum">1</i>) throws AuthenticationException {
+
+
+        String username;
+        if (!clientData.getUsername().isPresent() <i class="conum">4</i>) {
+            throw new AuthenticationException("No Username provided", ReturnCode.REFUSED_NOT_AUTHORIZED); <i class="conum">2</i>
+        }
+        username = clientData.getUsername().get();
+
+
+        if (Strings.isNullOrEmpty(username)) {
+            throw new AuthenticationException("No Username provided", ReturnCode.REFUSED_NOT_AUTHORIZED);<i class="conum">2</i>
+        }
+
+        Optional&lt;String&gt; password = Optional.fromNullable(retrievePasswordFromDatabase(username));
+
+        if (!password.isPresent()) {
+            throw new AuthenticationException("No Account with the credentials was found!", ReturnCode.REFUSED_NOT_AUTHORIZED);<i class="conum">2</i>
+        } else {
+            if (clientData.getPassword().get().equals(password.get())) {
+                return true;
+            }
+            return false;
+        }
+
+    }
+
+    @Cached(timeToLive = 10, timeUnit = TimeUnit.MINUTES) <i class="conum">3</i>
+    private String retrievePasswordFromDatabase(String username) {
+
+        String password =....     //Call to any database to ask for the password of the user
+
+        return password;
+    }
+
+    @Override
+    public int priority() {
+        return CallbackPriority.MEDIUM;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>ClientData holds all data provided by the client and can be used to identify it.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>If a AuthenticationException is thrown, the client will be disconnected independently of possible other authentication plugins, see <a href="#guidelines-multiple-auth-plugins">the guidelines</a> for mulitple plugins.</td>
+</tr>
+<tr>
+<td><i class="conum">3</i></td>
+<td>The @Cached annotation is used to cache the request for a particular username for 10 minutes, therefore the plugin only blocks when it fetches the value from the database.</td>
+</tr>
+<tr>
+<td><i class="conum">4</i></td>
+<td>ClientData uses the Optional class from Google Guava, which allows better handling of possible null values.</td>
+</tr>
+</table>
+</div>
+
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="client-authorization-chapter">Client Authorization</h3>
+<div class="paragraph">
+<p>The authorization of is verified every time a client tries to publish to a certain topic or subscribes to topics. The following diagram shows all possible flows of a publish message (the same flow applies for a subscribe message):</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/uml/client_authorization.png" alt="Client Authorization Callback">
+</div>
+
+</div>
+<div class="paragraph">
+<p>The most interesting callback here is the <code>OnAuthorizationCallback</code>, which returns a list of <code>MqttTopicPermission</code>s for the client.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-important" title="Important"></i>
+</td>
+<td class="content">
+
+The list of <code>MqttTopicPermission</code>s should contains all permissions the client has. The matching if a certain action will be allowed due to the permissions of the client will be done by HiveMQ.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following snippet shows the available constructors for the MqttTopicPermission class.</p>
+</div>
+<div class="listingblock">
+<div class="title">Available constructors for MqttTopicPermission</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    public MqttTopicPermission(String topic) <i class="conum">1</i>
+
+    public MqttTopicPermission(String topic, ALLOWED_ACTIVITY activity) <i class="conum">2</i>
+
+    public MqttTopicPermission(String topic, ALLOWED_QOS qos) <i class="conum">3</i>
+
+    public MqttTopicPermission(String topic, ALLOWED_QOS qos, ALLOWED_ACTIVITY activity) <i class="conum">4</i>
+</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Only limit the topic a client can publish/subscribe to, but allow publish, subscribe with all Quality of Service (QoS) levels.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Limit the topic and the client&#8217;s ability to publish, subscribe or do both, allow all QoS.</td>
+</tr>
+<tr>
+<td><i class="conum">3</i></td>
+<td>Limit the topic and the client&#8217;s ability to use only some of the QoS or all of them, allow publish and subscribe.</td>
+</tr>
+<tr>
+<td><i class="conum">4</i></td>
+<td>Limit the topic, the client&#8217;s ability to use QoS and to subscribe/publish.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Example implementation of a permission, which allows a client to only publish/subscribe to topics with his client id upfront.</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>public class ClientIdTopic implements OnAuthorizationCallback {
+
+    @Override
+    @Cached(timeToLive = 10, timeUnit = TimeUnit.MINUTES) <i class="conum">2</i>
+    public List&lt;MqttTopicPermission&gt; getPermissionsForClient(ClientData clientData) {
+
+        List&lt;MqttTopicPermission&gt; mqttTopicPermissions = new ArrayList&lt;MqttTopicPermission&gt;();
+        mqttTopicPermissions.add(new MqttTopicPermission(clientData.getClientId() + "/#")); <i class="conum">1</i>
+
+        return mqttTopicPermissions;
+
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>The permission allows a client only to publish/subscribe to topics, which begin with his client id.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>The method is another ideal candidate for the <a href="#caching-chapter">@Cached</a> annotation.</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="hivemqdocs_guidelines_for_multiple_plugins">Guidelines for multiple plugins</h3>
+<div class="paragraph">
+<p>In the case more than one authentication or authorization plugins is running simultaneously, additional aspects have to be taken into consideration.</p>
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_authenticationexception_or_false">AuthenticationException or false</h4>
+<div class="paragraph">
+<p>There are two ways in a <code>OnAuthenticationCallback</code> to tell HiveMQ that the client is not allowed to connect:</p>
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>return <code>false</code></p>
+</li>
+<li>
+<p>thrown an <code>AuthenticationException</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If there is only a single plugin implementing the <code>OnAuthenticationCallback</code> the only reason to throw an AuthenticationException is to customize the return code. In a multiple plugin scenario there is another important difference: When an AuthenticationException is being catched by HiveMQ, the result of the other plugins have no meaning, because the client gets disconnected instantly. By contrast, when returning <code>false</code>, HiveMQ synchronizes all callbacks and then computes the over all result. More on that in the <a href="#authentication-strategy">next chapter</a>.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="title">How to decide if AuthenticationException or return false should be used?</div>
+This is up to the developer, because it is highly depending on the authentication logic in a particular use case. See the following example for an advice.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>An example use case to show the difference would be, that the client user can be either in a MySQL or PostgreSQL database. So there are two plugins, one for checking the existance of the user in each database. If one of the plugins encouter that the client has not provided username and password, an AuthenticationException should be thrown, because most likely without this information the other plugin is also not able to authenticate.</p>
+</div>
+<div class="listingblock">
+<div class="title">Difference between returning false and throwing an AuthenticationException</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>...
+    @Override
+    @Cached(timeToLive = 1, timeUnit = TimeUnit.MINUTES)
+    public Boolean checkCredentials(ClientCredentialsData clientData) throws AuthenticationException {
+
+
+        String clientUsername;
+        String clientPassword;
+        if (!clientData.getUsername().isPresent() &amp;&amp; !clientData.getPassword().isPresent() ) {
+            clientUsername = clientData.getUsername().get();
+            clientPassword = clientData.getPassword().get();
+        }
+        else
+        {
+            throw new AuthenticationException(ReturnCode.REFUSED_BAD_USERNAME_OR_PASSWORD);<i class="conum">1</i>
+        }
+
+        String savedPassword = retrievePassword(clientUsername);
+
+        if(clientPassword.equals(savedPassword))
+        {
+            return true;
+        }
+        else
+        {
+            return false; <i class="conum">2</i>
+        }
+    }
+...</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Username and password are not present and an <code>AuthenticationException</code> is thrown, because in the above stated use case no authentication can be granted.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>If the user is not present or the password does not match, returning false would be the correct thing to do, preserving the chance for the other plugin to successfully authenticate the client.</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="authentication-strategy">Successful authentication/authorization</h4>
+<div class="paragraph">
+<p>If none of the plugins had thrown an <code>AuthenticationException</code>, the return value of each plugin will be taken into consideration for determine the overall result.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="title">Criterion to authentication or authorize a client</div>
+If one of the plugins returned <code>true</code> or the matching permission, HiveMQ is authenticating the client or accepting the authorization request.
+</td>
+</tr>
+</table>
+</div>
+
+</div>
+
+</div>
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="services-chapter">Services</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>HiveMQ Services are a powerful concept introduced with HiveMQ 1.5. They provide a convenient way to interact with the HiveMQ core from plugins.</p>
+</div>
+<table class="tableblock frame-all grid-all" style="width:100%; ">
+<caption class="title">Table 5. Available HiveMQ Services</caption>
+<colgroup>
+<col style="width:25%;">
+<col style="width:25%;">
+<col style="width:50%;"> 
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Available since</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#retained-message-store-service">Retained Message Store Service</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gives access to retained messages and lets plugins read, create, delete and modify retained messages</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#subscription-store-service">Subscription Store Service</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gives access to subscriptions and lets plugins read, create, delete and modify subscriptions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#client-service">Client Service</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gives access to information about connected clients and clients with a persistent session</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#publish-service">Publish Service</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allows to publish new MQTT messages to subscribed clients</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#systopic-service">$SYS Topic Service</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2.0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allows to query, add, remove and modify $SYS Topics at runtime.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#bridge-manager-service">Bridge Manager Service</a></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2.0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Allows to add, remove, start and stop bridge configurations dynamically at runtime</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>There are more services planned in the future. Please <a href="mailto:hivemq@dc-square.de">contact us</a> if you have specific needs for new services.</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+<div class="title">Inject Services!</div>
+At the moment it&#8217;s only possible to use the HiveMQ Services in your plugin if you inject them via <a href="#dependency-injection-chapter">Dependency Injection</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="retained-message-store-service">Retained Message Store Service</h3>
+<div class="paragraph">
+<p>The Retained Message Store enables HiveMQ plugins to directly add and remove retained messages
+from HiveMQs retained message store. It&#8217;s also possible to retrieve a certain retained message or the amount of messages that are currently stored by HiveMQ.</p>
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_api">API</h4>
+<div class="listingblock">
+<div class="title">Retained Message Store API</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>           /**
+            * @return all retained messages which are currently stored
+            */
+           public Set&lt;RetainedMessage&gt; getRetainedMessages();
+
+           /**
+            * @param topic a topic
+            * @return retained message for the specific topic, otherwise an Optional
+            *         instance with an empty reference
+            */
+           public Optional&lt;RetainedMessage&gt; getRetainedMessage(String topic);
+
+           /**
+            * Removes the retained message from given topic. null values are ignored.
+            * If there isn't any retained message on the topic yet, nothing will happen.
+            *
+            * @param topic from which the message should be removed
+            */
+           public void remove(String topic);
+
+           /**
+            * Removes a given retained message. null values are ignored.
+            * If the given retained message doesn't exist, nothing will happen.
+            *
+            * @param retainedMessage which should be removed
+            */
+           public void remove(RetainedMessage retainedMessage);
+
+           /**
+            * Removes all retained messages from the message store.
+            */
+           public void clear();
+
+           /**
+            * This method adds or replaces a retained message
+            *
+            * @param retainedMessage which should be added or replaced
+            */
+           public void addOrReplace(RetainedMessage retainedMessage);
+
+           /**
+            * Checks if the retained message is present in the retained message store.
+            * Only the topic is of a retained message is considered for this check, QoS and message are ignored.
+            *
+            * @param retainedMessage to check if it's already in the message store
+            * @return true if there's already a message on the topic of the given retained message
+            */
+           public boolean contains(RetainedMessage retainedMessage);
+
+           /**
+            * @return the number of all retained messages
+            */
+           public int size();</code></pre>
+</div>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_example_usage">Example Usage</h4>
+<div class="paragraph">
+<p>Here you can find common examples on how to use the RetainedMessageStore in your own plugins.</p>
+</div>
+<div class="listingblock">
+<div class="title">Inject the Message Store</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.services.RetainedMessageStore;
+
+import javax.inject.Inject;
+
+public class MyPlugin {
+
+    private final RetainedMessageStore retainedMessageStore;
+
+    @Inject
+    public MyPlugin(final RetainedMessageStore retainedMessageStore) { <i class="conum">1</i>
+        this.retainedMessageStore = retainedMessageStore;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>The message store implementation is injected by the HiveMQ core.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><br></p>
+</div>
+<div class="listingblock">
+<div class="title">Programmatically add a new Retained Message.</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    public void addRetainedMessage(String topic, String message){
+
+        if(!retainedMessageStore.contains(topic)) <i class="conum">1</i>
+            retainedMessageStore.addOrReplace(new RetainedMessage
+                                 (topic, message.getBytes(), QoS.valueOf(1)));<i class="conum">2</i>
+    }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Check  if there is currently a retained message for a certain topic.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Add a retained message to the topic if there is none.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><br></p>
+</div>
+<div class="listingblock">
+<div class="title">Clear the whole Retained Message Store.</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    public void cleanUp(){
+
+        if(retainedMessageStore.size() &gt;= TOO_MANY) <i class="conum">1</i>
+            retainedMessageStore.clear(); <i class="conum">2</i>
+    }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Get the amount of retained messages that are currently stored and check if there are too many retained messages.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Delete all retained messages.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><br></p>
+</div>
+<div class="listingblock">
+<div class="title">Read and remove specific retained messages.</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    public void logAndDeleteRetainedMessage(String topic){
+        Optional&lt;RetainedMessage&gt; rm = retainedMessageStore.getRetainedMessage(topic); <i class="conum">1</i>
+
+        if(rm.isPresent()){
+            logger.info(new String(rm.get().getMessage()));
+            retainedMessageStore.remove(rm.get()); <i class="conum">2</i>
+        }
+    }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Get the retained message for a certain topic if there is any.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Remove the message.</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_gotchas">Gotchas</h4>
+<div class="ulist">
+
+<ul>
+<li>
+<p>When calling the <code>getRetainedMessage</code> method with a topic for which no retained message is stored,
+you will recieve a <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/base/Optional.html"><code>Optional.absent()</code></a> object instead of <code>null</code>. See the <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/base/Optional.html">com.google.common.base.Optional</a> documentation
+for further information about the <code>Optional</code> class.</p>
+</li>
+</ul>
+</div>
+
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="subscription-store-service">Subscription Store Service</h3>
+<div class="paragraph">
+<p>The Subscription Store is designed to programmatically interact with MQTT client subscriptions. The Subscription Store service provides methods to get,
+add or remove subscriptions and allows to find out which topics a certain subscriber has subscribed to. It&#8217;s also possible with the Subscription Store
+to find out which clients subscribed to a certain topic.</p>
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_api_2">API</h4>
+<div class="listingblock">
+
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>
+    /**
+     * This method returns all subscriptions on HiveMQ as a Multimap of client identifiers and topics.
+     * &lt;p/&gt;
+     * Please be aware that calling this method very often on HiveMQ instances with many subscriptions could have
+     * negative performance effects
+     *
+     * @return a Multimap of client identifiers and their topic subscriptions
+     */
+    public Multimap&lt;String, Topic&gt; getSubscriptions();
+
+    /**
+     * Returns all MQTT client subscriber identifiers for a given topic. MQTT Wildcards are allowed.
+     *
+     * @param topic the topic
+     * @return client identifiers of all subscribers that subscribed to the topic
+     */
+    public Set&lt;String&gt; getSubscribers(String topic);
+
+    /**
+     * Returns all topics a client subscribed to.
+     *
+     * @param clientID of the client
+     * @return all topics the client subscribed to
+     */
+    public Set&lt;Topic&gt; getTopics(String clientID);
+
+    /**
+     * This method adds a subscription for a certain client to a certain topic.
+     * &lt;p/&gt;
+     * If the clientId or the topic are null, nothing will happen.
+     *
+     * @param clientID client, which should be subscribed
+     * @param topic    topic to which the client should be subscribed
+     */
+    public void addSubscription(String clientID, Topic topic);
+
+    /**
+     * This method removes a subscription for a certain client to a certain topic
+     *
+     * @param clientID client, which should be unsubscribed
+     * @param topic    topic from which the client should be unsubscribed
+     */
+    public void removeSubscription(String clientID, String topic);
+</code></pre>
+</div>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_example_usage_2">Example Usage</h4>
+<div class="paragraph">
+<p>Here you can find common examples on how to use the RetainedMessageStore in your own plugins.</p>
+</div>
+<div class="listingblock">
+<div class="title">Inject the Subscription Store</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.services.SubscriptionStore;
+
+import javax.inject.Inject;
+
+public class MyPlugin {
+
+    private final SubscriptionStore subscriptionStore;
+
+    @Inject
+    public MyPlugin(final SubscriptionStore subscriptionStore) { <i class="conum">1</i>
+        this.subscriptionStore = subscriptionStore;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>The subscription store implementation is injected by the HiveMQ core.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><br></p>
+</div>
+<div class="listingblock">
+<div class="title">Remove unwanted subscriptions</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    public void removeBadTopicSubscriptions(Topic badTopic) {
+
+        Multimap&lt;String, Topic&gt; subscriptions = subscriptionStore.getSubscriptions(); <i class="conum">1</i>
+        for (String clientId : subscriptions.keySet()) {  <i class="conum">2</i>
+
+            if (subscriptions.get(clientId).contains(badTopic.getTopic()))) {
+                subscriptionStore.removeSubscription(clientId, badTopic); <i class="conum">3</i>
+            }
+        }
+    }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Get a <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multimap.html">Multimap</a> with client identifiers as keys and topic subscriptions as value.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Iterate all client identifiers.</td>
+</tr>
+<tr>
+<td><i class="conum">3</i></td>
+<td>Find all clients that subscribed to a certain topic and remove the subscriptions.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><br></p>
+</div>
+<div class="listingblock">
+<div class="title">Setup a default Subscription</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    private void addAllClientsToTopic(String topic){
+        for(String clientId : clientService.getConnectedClients()){
+            subscriptionStore.addSubscription(clientId, new Topic(topic, QoS.valueOf(1))); <i class="conum">1</i>
+        }
+    }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>As soon as a subscription is added, the MQTT client will receive all messages published to the topic.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><br></p>
+</div>
+<div class="listingblock">
+<div class="title">List Subscribers for a certain topic</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    private void logSubscribers(String topic){
+        for(String clientId : subscriptionStore.getSubscribers(topic)){
+            log.info(clientId);
+        }
+    }</code></pre>
+</div>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_gotchas_2">Gotchas</h4>
+<div class="ulist">
+
+<ul>
+<li>
+<p>The <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multimap.html"><code>Multimap</code></a> Class is part of the <code>com.google.common.collect</code> API. See the <a href="http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/collect/Multimap.html">documentation</a> for further information.</p>
+</li>
+<li>
+<p><code>Topic</code> class objects are equal if their topics are equal, independent of their quality of service (QoS) levels.</p>
+</li>
+</ul>
+</div>
+
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="client-service">Client Service</h3>
+<div class="paragraph">
+<p>The Client Service allows plugins to gather information about clients, like whether
+a client is currently connected or not, its username, identifier and SSL/TLS certificate, if the client is anonymous or
+if the client is authenticated.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Only local information</div>
+This service only works locally and you won&#8217;t get any information about connected clients on other HiveMQ nodes in a HiveMQ cluster
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_api_3">API</h4>
+<div class="listingblock">
+
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    /**
+     * Returns all identifiers of connected clients of this HiveMQ Node. You won't receive client identifiers of connected
+     * clients from other HiveMQ nodes if HiveMQ runs in a cluster.
+     *
+     * If you have many client connections, please not that calling this method frequently could have negative performance
+     * effects
+     *
+     * @return client identifiers of all connected clients
+     */
+    public Set&lt;String&gt; getConnectedClients();
+
+    /**
+     * Returns all disconnected clients which have a persistent MQTT session (MQTT cleanSession=false).
+     *
+     * Disconnected MQTT clients which don't have a persistent Session won't be returned by this method
+     *
+     * @return all disconnected clients with a persistent MQTT session
+     */
+    public Set&lt;String&gt; getDisconnectedClients();
+
+    /**
+     * Checks if a client with a given identifier is currently connected to the HiveMQ broker.
+     *
+     * @param clientId client, which should be checked
+     * @return true, if a certain client is currently connected and false otherwise
+     */
+    public boolean isClientConnected(String clientId);
+
+    /**
+     * Returns additional client information about a given client with a given client identifier.
+     *
+     * If the client isn't connected, you will receive an {@link Optional} with absent data.
+     *
+     * @param clientId the client identifier of the client
+     * @return {@link ClientData} for a specific client.
+     */
+    public Optional&lt;ClientData&gt; getClientDataForClientId(String clientId);
+</code></pre>
+</div>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_example_usage_3">Example Usage</h4>
+<div class="paragraph">
+<p>Here you can find common examples on how to use the ClientService in your own plugins.</p>
+</div>
+<div class="listingblock">
+<div class="title">Inject the Client Server</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>import com.dcsquare.hivemq.spi.services.ClientService;
+
+import javax.inject.Inject;
+
+public class MyPlugin {
+
+    private final ClientService clientService;
+
+    @Inject
+    public MyPlugin(final ClientService clientService) { <i class="conum">1</i>
+        this.clientService = clientService;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>The client service implementation is injected by the HiveMQ core.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><br></p>
+</div>
+<div class="listingblock">
+<div class="title">Make a message retained if the receiver is not connected</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    @Override
+    public void onPublishSend(PUBLISH publish, ClientData clientData) {
+        Set&lt;String&gt; subscribers = subscriptionStore.getSubscribers(publish.getTopic());
+        for (String subscriber : subscribers){
+            if(!clientService.isClientConnected(subscriber)){ <i class="conum">1</i>
+                publish.setRetain(true); <i class="conum">2</i>
+                return;
+            }
+        }
+    }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Find out if a certain client is currently connected.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Make the message retained if the client is net connected.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><br></p>
+</div>
+<div class="listingblock">
+<div class="title">Client Monitoring</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    private void logClientData(){
+        for(String clientId : clientService.getConnectedClients()){ <i class="conum">1</i>
+            ClientData clientData = clientService.getClientDataForClientId(clientId).get();
+            log.info(clientData.getUsername()+ " " +clientData.isAnonymous() + " " + clientData.isAuthenticated()); <i class="conum">2</i>
+        }
+    }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Find the identifiers of all clients that are currently connected.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Gather some information form the clientData object.</td>
+</tr>
+</table>
+</div>
+<div class="sect4">
+<h5 id="hivemqdocs_gotchas_3">Gotchas</h5>
+<div class="ulist">
+
+<ul>
+<li>
+<p>If a MQTT client is connected with <code>cleanSession=false</code>, all information about the client will be lost, as soon as the client disconnects. That means the <code>ClientService</code> is not able to return it any more as "disconnected client".</p>
+</li>
+</ul>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="publish-service">Publish Service</h3>
+<div class="paragraph">
+<p>The Publish Service is used for the automated sending of MQTT publish messages in HiveMQ plugins</p>
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_api_4">API</h4>
+<div class="listingblock">
+
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    /**
+     * Publishes a new MQTT PUBLISH message. The standard MQTT topic matching mechanism of HiveMQ will apply.
+     *
+     * If the given PUBLISH or any of its information (topic,qos,message) is null, a NullPointerException
+     * will be thrown
+     *
+     * @param publish object with topic, QoS and message, which should be published to all subscribed clients
+     * @throws NullPointerException if the given object is null or any relevant information like topic, qos
+     *                              or message is null
+     */
+    public void publish(PUBLISH publish);</code></pre>
+</div>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_example_usage_4">Example Usage</h4>
+<div class="paragraph">
+<p>Here you can find common examples on how to use the PublishService in your own plugins.</p>
+</div>
+<div class="listingblock">
+<div class="title">Copy and redirect a PUBLISH message to a subtopic</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    @Override
+    public void onPublishReceived(PUBLISH publish, ClientData clientData)
+                                        throws OnPublishReceivedException {
+
+        PUBLISH copy = PUBLISH.copy(publish); <i class="conum">1</i>
+        copy.setTopic(publish.getTopic()+"/"+subTopic);
+        publishService.publish(copy); <i class="conum">2</i>
+    }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Make a copy of the incoming message.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Publish the copied message another topic.</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="title">Deep copy</div>
+If you don&#8217;t want to modify the original MQTT PUBLISH message, always make a deep copy with <code>PUBLISH.copy</code> of the original
+          PUBLISH object for further modifications.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><br></p>
+</div>
+<div class="listingblock">
+<div class="title">Publish a new MQTT message</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>    public void publishNewMessage() {
+        final PUBLISH message = new PUBLISH(); <i class="conum">1</i>
+        message.setQoS(QoS.EXACTLY_ONCE);
+        message.setTopic("the/topic");
+        message.setPayload("payload".getBytes(Charsets.UTF_8));
+        message.setRetain(true);
+
+        publishService.publish(message); <i class="conum">2</i>
+    }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Create a new PUBLISH object.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>Publish the message.</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_gotchas_4">Gotchas</h4>
+<div class="ulist">
+
+<ul>
+<li>
+<p>If you don&#8217;t want to modify the original MQTT PUBLISH message, always make a deep copy with <code>PUBLISH.copy</code> of the original
+PUBLISH object for further modifications.</p>
+</li>
+</ul>
+</div>
+
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="systopic-service">$SYS Topic Service</h3>
+<div class="paragraph">
+<p>The $SYS Topic Service is used for querying, adding, removing and modifying $SYS Topics at runtime.</p>
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_api_5">API</h4>
+<div class="listingblock">
+
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>/**
+     * Returns a Collection of all SYSTopicEntry topics available.
+     * It is possible to filter the returned list by Type.
+     * By default, this method will return all SYSTopicEntries.
+     *
+     * @param types the Types to filter
+     * @return a Collection of all $SYS topics registered to HiveMQ of the given Types
+     */
+    Collection&lt;SYSTopicEntry&gt; getAllEntries(Type... types);
+
+    /**
+     * Checks if the SYSTopicService contains a given SYSTopicEntry.
+     *
+     * @param entry the SYSTopicEntry to check
+     * @return true if the Service contains the given SYSTopicEntry,
+     *         false otherwise
+     */
+    boolean contains(final SYSTopicEntry entry);
+
+    /**
+     * Returns the SYSTopicEntry for a given topic.
+     *
+     * @param topic the topic
+     * @return an Optional of a SYSTopicEntry
+     */
+    Optional&lt;SYSTopicEntry&gt; getEntry(String topic);
+
+    /**
+     * Adds a new $SYS topic entry.
+     * The topic of the given SYSTopicEntry must start with '$SYS'.
+     *
+     * @param entry a new SYSTopicEntry to add
+     */
+    void addEntry(final SYSTopicEntry entry);
+
+    /**
+     * Removes a SYSTopicEntry
+     *
+     * @param entry the entry to remove
+     * @return true if the SYSTopicEntry could be removed, false otherwise
+     */
+    boolean removeEntry(final SYSTopicEntry entry);
+</code></pre>
+</div>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_example_usage_5">Example Usage</h4>
+<div class="listingblock">
+<div class="title">Add a new $SYS Topic at runtime</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code> sysTopicService.addEntry(new SYSTopicEntry() {
+         @Override
+         public String topic() {
+             return "$SYS/new";
+         }
+
+         @Override
+         public Supplier&lt;byte[]&gt; payload() {
+             return Suppliers.ofInstance("test".getBytes("UTF-8"));
+         }
+
+         @Override
+         public Type type() {
+             return Type.STANDARD;
+         }
+
+         @Override
+         public String description() {
+             return "the description";
+         }
+ });</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Remove all static $SYS topics at runtime</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code> final Collection&lt;SYSTopicEntry&gt; allStaticEntries = sysTopicService.getAllEntries(Type.STATIC);
+
+ for (SYSTopicEntry entry : allStaticEntries) {
+     sysTopicService.removeEntry(entry);
+ }</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Get payload for a specific $SYS topic at runtime</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code> final Optional&lt;SYSTopicEntry&gt; entry = sysTopicService.getEntry("$SYS/broker/uptime");
+
+ if (entry.isPresent()) {
+     log.info("Uptime is {}", new String(entry.get().payload().get(), Charsets.UTF_8));
+ }</code></pre>
+</div>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_gotchas_5">Gotchas</h4>
+<div class="ulist">
+
+<ul>
+<li>
+<p>If $SYS topics are disabled in the HiveMQ config file, no regular $SYS topic will be available and no $SYS topic will be published periodically.</p>
+</li>
+<li>
+<p>To add custom topics to the $SYS topic tree, these topics must start with <code>"$SYS/"</code>.</p>
+</li>
+</ul>
+</div>
+
+</div>
+
+</div>
+<div class="sect2">
+<h3 id="bridge-manager-service">Bridge Manager Service</h3>
+<div class="paragraph">
+<p>The Bridge Manager Service is used to administer bridge configurations at runtime. It allows to add or remove a bridge programmatically. It&#8217;s also possible to modify existing bridges at runtime.</p>
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_api_6">API</h4>
+<div class="listingblock">
+
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>        /**
+         * Adds a new Bridge to the bridge manager. The bridge won't be started
+         * but can be listed.
+         *
+         * @param bridge the bridge to add to the bridge manager.
+         */
+        public void addBridge(final Bridge bridge);
+
+        /**
+         * Removes a bridge from the bridge manager. If the bridge to remove
+         * is running, it will be stopped and terminated before it is removed.
+         * Please note, that this method will block until the bridge is terminated.
+         * If you want to stop the bridge asynchronously, consider using the stopBridge
+         * method before removing the bridge.
+         *
+         * If the passed bridge to remove doesn't exist, nothing will happen.
+         *
+         * @param bridge the bridge to stop (if running) and remove
+         */
+        public void removeBridge(final Bridge bridge);
+
+        /**
+         * Starts a bridge. If the bridge wasn't added to the manager before,
+         * it will be added automatically.
+         *
+         * This method starts the bridge asynchronously. You can use the returned
+         * ListenableFuture to decide if you want to block until the bridge is started
+         * or if you want to use a reactive programming pattern.
+         *
+         * Note, that you can start a LAZY bridge manually with this method without waiting for
+         * passing the configured threshold. Also, you can reconnect disconnected bridges with
+         * bridge mode ONCE.
+         *
+         * @param bridge the bridge to start
+         * @return a ListenableFuture which you can use to block or use to react
+         *         when the bridge started
+         */
+        public ListenableFuture&lt;Void&gt; startBridge(final Bridge bridge);
+
+        /**
+         * Stops a bridge. This method does not remove a bridge from the bridge manager.
+         * If you would like to get the bridge also removed from the bridge manager, consider
+         * using the removeBridge method.
+         *
+         * This method stops the bridge asynchronously. You can use the returned
+         * ListenableFuture to decide if you want to block until the bridge is stopped
+         * or if you want to use a reactive programming pattern.
+         *
+         * @param bridge the bridge to stop
+         * @return a ListenableFuture which you can use to block or use to react
+         *         when the bridge stopped
+         */
+        public ListenableFuture&lt;Void&gt; stopBridge(final Bridge bridge);
+
+        /**
+         * Returns a Collection of all bridges registered to this bridge manager.
+         *
+         * @return a Collection of all bridges registered to this bridge manager
+         */
+        public Collection&lt;Bridge&gt; listBridges();
+
+        /**
+         * Stops all bridges. This method does not remove bridges from the bridge manager.
+         *
+         * This method stops the bridges asynchronously. You can use the returned
+         * ListenableFuture to decide if you want to block until all bridges are stopped
+         * or if you want to use a reactive programming pattern.
+         *
+         * @return a ListenableFuture which you can use to block or use to react
+         *         when all bridges are stopped
+         */
+        public ListenableFuture&lt;List&lt;Void&gt;&gt; stopAllBridges();
+
+        /**
+         * Returns the state of a given bridge. If the passed bridge does not exist,
+         * an Optional with an absent value will be returned
+         *
+         * @param bridge the bridge to check the state for.
+         * @return a Optional with the state for a bridge.
+         */
+        public Optional&lt;State&gt; getBridgeState(final Bridge bridge);
+</code></pre>
+</div>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_example_usage_6">Example Usage</h4>
+<div class="listingblock">
+<div class="title">Add a new Bridge at runtime and start it</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code>         final Bridge exampleBridge = new Bridge();<i class="conum">1</i>
+         exampleBridge.setConnectionName("BridgeConnection");
+         exampleBridge.setClientId("bridgeClient");
+         exampleBridge.setStartType(StartType.AUTOMATIC);
+         exampleBridge.setTryPrivate(true);
+
+         exampleBridge.setCleanSession(true);
+
+         final List&lt;TopicPattern&gt; topicPatterns = new ArrayList&lt;TopicPattern&gt;();
+         final TopicPattern pattern = new TopicPattern();
+         pattern.setLocalPrefix("");
+         pattern.setRemotePrefix("");
+         pattern.setPattern("#");
+         pattern.setQoS(QoS.AT_LEAST_ONCE);
+         pattern.setType(TopicPattern.Type.OUT);
+         topicPatterns.add(pattern);
+         exampleBridge.setTopicPatterns(topicPatterns);
+
+         final List&lt;Address&gt; addresses = new ArrayList&lt;Address&gt;();
+         addresses.add(new Address("localhost", 1883));
+         exampleBridge.setAddresses(addresses);
+
+         exampleBridge.setKeepAlive(60);
+         exampleBridge.setRestartTimeout(10);
+
+         exampleBridge.setIdleTimeout(30);
+         exampleBridge.setThreshold(10);
+
+         exampleBridge.setNotificationsEnabled(false);
+         exampleBridge.setNotification(new Notification("$SYS/broker/connection/#{clientId}/state", QoS.EXACTLY_ONCE)); <i class="conum">2</i>
+
+         exampleBridge.setRoundRobin(false);
+
+         exampleBridge.setUsername("username");
+         exampleBridge.setPassword("password");
+
+         bridgeManagerService.startBridge(exampleBridge);<i class="conum">3</i></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>It is important to add all necessary fields for the bridge configuration.</td>
+</tr>
+<tr>
+<td><i class="conum">2</i></td>
+<td>This is the default topic for sending notifications. A bridge is the allowed to publish on this specific $SYS topic (while standard MQTT clients must not publish to $SYS).</td>
+</tr>
+<tr>
+<td><i class="conum">3</i></td>
+<td>This will add the bridge to the config and then start it.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Start all stopped bridges</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code> final Collection&lt;Bridge&gt; bridges = bridgeManagerService.listBridges();
+ for (Bridge bridge : bridges) {
+    if (bridgeManagerService.getBridgeState(bridge).get().equals(State.STOPPED)) {
+         bridgeManagerService.startBridge(bridge);
+    }
+ }</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Remove all running bridges</div>
+<div class="content monospaced">
+<pre class="prettyprint java language-java"><code> final Collection&lt;Bridge&gt; bridges = bridgeManagerService.listBridges();
+ for (Bridge bridge : bridges) {
+    if (bridgeManagerService.getBridgeState(bridge).get().equals(State.RUNNING)) {
+         bridgeManagerService.removeBridge(bridge); <i class="conum">1</i>
+    }
+ }</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+
+<table>
+<tr>
+<td><i class="conum">1</i></td>
+<td>Remove stops the bridge first if it is running.</td>
+</tr>
+</table>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="hivemqdocs_gotchas_6">Gotchas</h4>
+<div class="ulist">
+
+<ul>
+<li>
+<p>When configuring a bridge programmatically, all necessary bridge properties have to be set. There are no default values.</p>
+</li>
+</ul>
+</div>
+
+</div>
+
+</div>
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="pack-deploy-chapter">Packaging and Deployment</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you want to package the plugin and deploy it to your production environment, just follow these steps:</p>
+</div>
+<div class="ulist">
+
+<ul>
+<li>
+<p>Execute the Maven goal <code>package</code> without the <code>RunWithHiveMQ</code> Profile (see <a href="#maven-plugin-usage">Maven Plugin usage</a>)</p>
+</li>
+<li>
+<p>Find the jar file following this naming convertion <code>&lt;artifactId&gt;-&lt;version&gt;.jar</code> in your project build folder, usually <code>target</code></p>
+</li>
+<li>
+<p>Copy the jar file and all configuration files (if needed) to the HiveMQ plugin folder (&lt;HiveMQHome&gt;/plugins) in you production environment</p>
+</li>
+<li>
+<p>Start HiveMQ &#8230; Done!</p>
+</li>
+</ul>
+</div>
+
+</div>
+</div>
+
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnote_1">
+<a href="#_footnoteref_1">1</a>. Actually HiveMQ just utilizes the <code>META-INF/services/</code> file approach and uses an enhanced service loader mechanism which allows dependency injection in plugins
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Version 1<br>
+Last updated 2015-04-16 17:47:35 CEST
+</div>
+</div>
+</body>
+</html>

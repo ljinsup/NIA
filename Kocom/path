@@ -1,0 +1,5 @@
+VERTX_HOME=$HOME/vert.x-2.1.5
+PATH=$VERTX_HOME/bin:$PATH/
+VERTX_MODS=$HOME/.vertx-modules/
+HIVEMQ_HOME=$HOME/hivemq-2.3.1
+PATH=$HIVEMQ_HOME/bin:$PATH/

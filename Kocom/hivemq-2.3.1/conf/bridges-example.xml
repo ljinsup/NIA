@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bridges xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="http://www.hivemq.com/bridges/bridge.xsd">
+    <bridge>
+        <connectionName>Bridge1</connectionName>
+        <addresses>
+            <address>
+                <host>localhost</host>
+                <port>1884</port>
+            </address>
+        </addresses>
+        <clientId>bridgeClient</clientId>
+        <topicPatterns>
+            <topicPattern>
+                <topic>#</topic>
+                <qos>1</qos>
+                <direction>both</direction>
+            </topicPattern>
+        </topicPatterns>
+        <cleanSession>true</cleanSession>
+        <idleTimeout>10</idleTimeout>
+        <notificationsEnabled>true</notificationsEnabled>
+        <tryPrivate>true</tryPrivate>
+    </bridge>
+</bridges>

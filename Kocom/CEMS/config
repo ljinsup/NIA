@@ -1,0 +1,6 @@
+DB_Host=localhost
+DB_Port=30000
+R_Host=localhost
+R_Port=6311
+MQTT_Host=localhost
+MQTT_Port=1883

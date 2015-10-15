@@ -1,0 +1,9 @@
+{
+    "main" : "publicDataRemover.js",
+    "worker" : true,
+    "system" : true,
+    "description" : "This module Collecting publicData(http://www.data.go.kr)",
+    "keyworld" : ["publicdata", "collector", "mongodb"],
+    "developer" : "ShicNova(Yun Hyeon-Ki)",
+    "homepage" : "http://yhkhy.blog.me"
+}

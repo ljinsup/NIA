@@ -1,0 +1,13 @@
+datatime=측정일
+so2value=아황산가스 농도
+covalue=일산화탄소 농도
+o3value=오존 농도
+no2value=이산화질소 농도
+pm10value=미세먼지 농도
+khaivalue=통합대기환경 수치
+khaigrade=통합대기환경 지수
+so2grade=아황산가스 지수
+cograde=일산화탄소 지수
+o3grade=오존 지수
+no2grade=이산화질소 지수
+pm10grade=미세먼지 지수
