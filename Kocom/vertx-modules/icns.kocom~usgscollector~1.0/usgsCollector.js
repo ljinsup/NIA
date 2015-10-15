@@ -23,58 +23,22 @@ pa = "mongo-persistor";
 eb = vertx.eventBus;
 
 eventbus.registerHandler("usgsCollector", function (message, replier) {
-    var dbConfig = message.dbconfig;
-    var period = message.period * 1000 * 60 * 60; // transfer hour to millisecond
-    var time = new Date();
+//    var dbConfig = message.dbconfig;
+//    var period = message.period * 1000 * 60 * 60; // transfer hour to millisecond
+//    var time = new Date();
 
-    timer.setPeriodic(period, function () {
-        var client = vertx.createHttpClient().host("earthquake.usgs.gov"); // make connect(to api server)
+    var client = vertx.createHttpClient().host("earthquake.usgs.gov"); // make connect(to api server)
 
-        client.getNow("earthquakes/feed/v1.0/summary/all_hour.atom", function (resp) {
-            var body = "";
-            resp.dataHandler(function (chunk) {
-                body += chunk;
-            });
-            // receive XML DATA
+    client.getNow("earthquakes/feed/v1.0/summary/all_hour.atom", function (resp) {
+        var body = "";
+        resp.dataHandler(function (chunk) {
+            body += chunk;
+        });
+        // receive XML DATA
 
-            resp.endHandler(function () { // end the receive data
-                var jsonObjTemp = xml2json.parser(body); // xml to json converting
-                console.log(JSON.stringify(jsonObjTemp));
-//                var jsonObj = JSON.parse(JSON.stringify(jsonObjTemp.response.body.items.item)); // extracting valuable data
-//                console.log(JSON.stringify(jsonObj));
-//                container.deployModule("icns.kocom~mongo-persistor~1.0", dbConfig, 1, function (err, deployID) { // deploy mongodb module
-//                    if (err != null) {
-//                        err.printStackTrace();
-//                    }
-//                    else {
-//                        var i;
-//                        if (Array.isArray(jsonObj)) {
-//                            for (i = 0; i < jsonObj.length; i++) {
-//                                eb.send(pa, {
-//                                    action: 'save',
-//                                    db_name: 'publicdata',
-//                                    collection: message.collection,
-//                                    document: jsonObj[i]
-//                                }, function (reply) {
-//                                    var status = reply.status;
-//                                    console.log(status);
-//                                }); // save data to db and print result
-//                            }
-//                        }
-//                        else {
-//                            eb.send(pa, {
-//                                action: 'save',
-//                                collection: message.collection,
-//                                db_name: 'publicdata',
-//                                document: jsonObj
-//                            }, function (reply) {
-//                                var status = reply.status;
-//                                console.log(status);
-//                            });
-//                        }
-//                    }
-//                });
-            });
+        resp.endHandler(function () { // end the receive data
+            var jsonObjTemp = xml2json.parser(body); // xml to json converting
+            console.log(JSON.stringify(jsonObjTemp));
         });
     });
 });
