@@ -1,5 +1,5 @@
 
-CEMS::checkpkg("forecast")
+CEMS::checkpkg("forecast", "googleVis")
 
 service <<- list()
 service_id <<- list()
@@ -11,14 +11,15 @@ requirement <<- list()
 epl <<- list()
 sensorlist <<- list()
 
+DBHOST <- "163.180.117.96"
+DBPORT <- 30000
 
-
-
-mongo_db <- CEMS::connectMongo(DB="publicdata", port=30000)
-mongo_user <- CEMS::connectMongo(DB="userdata", port=30000)
-mongo_service <- CEMS::connectMongo(DB="clouddata", port=30000)
-mongo_tg <- CEMS::connectMongo(DB="sensordata", port=30000)
-mongo_public <- CEMS::connectMongo(DB="scconfig", port=30000)
+mongo_db <- CEMS::connectMongo(Addr = DBHOST, DB="scconfig", port=DBPORT)
+mongo_user <- CEMS::connectMongo(Addr = DBHOST, DB="userdata", port=DBPORT)
+mongo_service <- CEMS::connectMongo(Addr = DBHOST, DB="clouddata", port=DBPORT)
+mongo_tg <- CEMS::connectMongo(Addr = DBHOST, DB="sensordata", port=DBPORT)
+mongo_public <- CEMS::connectMongo(Addr = DBHOST, DB="publicdata", port=DBPORT)
+mongo_usgs <- CEMS::connectMongo(Addr = DBHOST, DB="usgsdata", port=DBPORT)
 
 dblist <- rmongodb::mongo.get.database.collections(mongo_db, attr(mongo_db, "db"))
 tglist <- rmongodb::mongo.get.database.collections(mongo_user, attr(mongo_user, "db"))

@@ -2,7 +2,7 @@ library(shiny)
 
 shinyUI(basicPage(
 #   uiOutput("CreateUI")
-  
+
   tabsetPanel(id="tab",
 
               tabPanel("공공데이터 추가",
@@ -20,15 +20,19 @@ shinyUI(basicPage(
                        fixedPage(
                          uiOutput("CreateUI")
                        )
+              ),
+              tabPanel("지진 데이터",
+                       ############### DB UI ###############
+                       fixedPage(
+                         uiOutput("USGSUI")
+                       )
+              ),
+              tabPanel("센서 맵",
+                       ############### DB UI ###############
+                       fixedPage(
+                         uiOutput("SensorMapUI")
+                       )
               )
-#              ,
-#              tabPanel("서비스 목록",
-#                       ############### DB UI ###############
-#                       fixedPage(
-#                         uiOutput("ListUI")
-#                       )
-#
-#              )
               
   )
   ))

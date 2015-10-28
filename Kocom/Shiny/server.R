@@ -2,17 +2,51 @@ library(shiny)
 library(rjson)
 library(rJava)
 library(forecast)
+library(googleVis)
 library(CEMS)
+
 
 shinyServer(function(input, output, session) {
   
+  output$USGSUI <- renderGvis({
+    usgs <- data.frame()
+    usgs <<- getAllData(mongo_usgs, "USGS공공데이터")
+    if(nrow(usgs) == 0 ){
+     
+    }
+    else{
+      usgs[,"loc"] <- as.data.frame(paste(usgs$lat, usgs$lng, sep = ":"))
+      usgs[,"data"] <- as.data.frame(paste(usgs$title, usgs$magnitude, sep = " "))
+      M <- gvisGeoMap(usgs,
+                      locationvar="loc", 
+                      numvar="magnitude", 
+                      hovervar="title", 
+                      options=list(height=1800, 
+                                   width=1800,
+                                   region="KR", 
+                                   dataMode="markers",
+                                   showLegend=FALSE
+                                   ))
+      plot(M)
+    }
+    
+    
+  })
+  
+#   output$SensorMapUI <- renderGvis({
+#     
+#     
+#   })
+  
+  #########################################################################
+  
+  
+  
   observeEvent(input$usgssend, function() {
     
-      mongo <- connectMongo(DB = "scconfig", port = 30000)
-    
-      key <- getAllData(mongo, "key")
-      key <- as.character(key[1,1])
-      destroyMongo(mongo)
+      key <- getAllData(mongo_db, "key")
+      key <- as.character(key[1, 1])
+      
       topic <- paste(key, "usgsCollect", sep = "/")
       
       .jinit("www/MQTTPublisher.jar")
@@ -98,41 +132,6 @@ shinyServer(function(input, output, session) {
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  output$ListUI <- renderUI({
-    if(is.null(tabledata())) {
-      fluidPage(h1("서비스를 생성해주세요."),
-      actionButton("refreshlist", "새로 고침")
-      )
-    }
-    else {
-      fluidPage(
-        checkboxGroupInput("servicelist", label = h4("공공데이터 목록"),
-                           choices = tabledata(), selected = NULL),
-        actionButton("serviceremove", label = "제거")
-      )}
-  })
-  
-  observeEvent(input$serviceremove, function() {
-    for(data in input$servicelist){
-      bson <- mongo.bson.buffer.create()
-      mongo.bson.buffer.append(bson, "service_id", unlist(strsplit(data, split = " "))[1])
-      bson <- mongo.bson.from.buffer(bson)
-      
-      mongo.remove(mongo_service, paste(attr(mongo_service, "db"), "service", sep = "."), bson)
-      
-    }
-  })
-  #########################################################################
-  
-  
-  
   output$text <- renderText({
     invalidateLater(1000, session = NULL)
     toJSON(service)
@@ -140,14 +139,14 @@ shinyServer(function(input, output, session) {
     
   dbnamelist <- reactive({
     input$dbrefresh
-    dblist <<- rmongodb::mongo.get.database.collections(mongo_db, attr(mongo_db, "db"))
+    dblist <<- rmongodb::mongo.get.database.collections(mongo_public, attr(mongo_public, "db"))
     list <- list()
     if(length(dblist)!=0)
       for(i in 1:length(dblist)){
         
         assign(
           unlist(strsplit(dblist[i], split=".", fixed=TRUE))[2],
-          CEMS::cems.restoreDataType(CEMS::getAllData(mongo_db, unlist(strsplit(dblist[i], split=".", fixed=TRUE))[2])),
+          CEMS::cems.restoreDataType(CEMS::getAllData(mongo_public, unlist(strsplit(dblist[i], split=".", fixed=TRUE))[2])),
           envir=.GlobalEnv
         )
         list[i] <- unlist(strsplit(dblist[i], split=".", fixed=TRUE))[2]
@@ -172,9 +171,9 @@ shinyServer(function(input, output, session) {
                              }
                              else{
                              fixedPage(
-                               
-                               plotOutput("dbplot"),
-                               
+                               try({
+                                plotOutput("dbplot")
+                               }),
                                actionButton("dbadd", label = "추가"),
                                actionButton("dbremove", label = "제거"),
                                actionButton("dbrefresh", label = "새로고침"),
@@ -204,8 +203,8 @@ shinyServer(function(input, output, session) {
                                selectInput("analysismethod", label = h4("분석 방법 선택"), 
                                            choices = c("", "예측분석", "비율분석", "비교분석")),
                                
-                               actionButton("methodadd", label = "추가"),
-                               actionButton("methodremove", label = "제거"),
+#                                actionButton("methodadd", label = "추가"),
+#                                actionButton("methodremove", label = "제거"),
                                
                                uiOutput("methodui")
                                )}
@@ -339,6 +338,7 @@ shinyServer(function(input, output, session) {
   
   ##############################   DBPLOT   ##############################
   output$dbplot <- renderPlot({
+    
     set <- get(input$dbselect)
     temp <- set[order(set[input$sort]),]
     
@@ -371,7 +371,7 @@ shinyServer(function(input, output, session) {
   ##############################    FUNC    ##############################
   DB <- reactive({    
     if(!is.null(input$dbselect) && !is.null(input$sort) && !is.null(input$check)){
-    res <- list(db=attr(mongo_db, "db"),
+    res <- list(db=attr(mongo_public, "db"),
                 collection=input$dbselect,
                 sort=input$sort,
                 attr=input$check)
@@ -832,9 +832,7 @@ shinyServer(function(input, output, session) {
     
       list <- list()
     
-      mongo <- connectMongo(DB = "scconfig", port = 30000)
-    
-      key <- getAllData(mongo, "key")
+      key <- getAllData(mongo_db, "key")
       key <- as.character(key[1,1])
       destroyMongo(mongo)
       topic <- paste(key, "PDImport", sep = "/")
