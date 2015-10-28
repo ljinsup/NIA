@@ -834,7 +834,7 @@ shinyServer(function(input, output, session) {
     
       key <- getAllData(mongo_db, "key")
       key <- as.character(key[1,1])
-      destroyMongo(mongo)
+      
       topic <- paste(key, "PDImport", sep = "/")
       
       .jinit("www/MQTTPublisher.jar")
