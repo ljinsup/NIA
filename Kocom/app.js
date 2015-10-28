@@ -51,12 +51,6 @@ container.deployModule('icns.kocom~publicdataremover~1.0', function (err) { // d
     }
 });
 
-container.deployModule('icns.kocom~usgscollector~1.0', function (err) { // deploy public data collector module
-    if (err != null) {
-        err.printStackTrace(); // error print;
-    }
-});
-
 container.deployModule('icns.kocom~tgregister~1.0', function (err) { // deploy public data collector module
     if (err != null) {
         err.printStackTrace(); // error print;
@@ -83,4 +77,11 @@ container.deployModule('icns.kocom~mqtt-client~0.1', mqttconf, 1, function (err)
         });
 
     }
+});
+
+container.deployModule('icns.kocom~usgs~1.0',  function (err) { // deploy public data collector module
+    if (err != null) {
+        err.printStackTrace(); // error print;
+    }
+    
 });

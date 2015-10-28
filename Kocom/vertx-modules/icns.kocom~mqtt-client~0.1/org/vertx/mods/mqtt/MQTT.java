@@ -11,7 +11,14 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.eclipse.paho.client.mqttv3.*;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
+import org.eclipse.paho.client.mqttv3.MqttTopic;
 import org.vertx.java.busmods.BusModBase;
 import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.Handler;
@@ -265,13 +272,15 @@ public class MQTT extends BusModBase implements Handler<Message<JsonObject>>
     				eb.send("pdRemover", objPDInfo);
     				return;
     			case "usgsCollect" :
-    				JsonObject objUSGSInfo = new JsonObject();
-    				JsonObject objDBConfig = new JsonObject();
-    				objDBConfig.putString("host", "localhost");
-    				objDBConfig.putNumber("port", 30000);
-    				objDBConfig.putString("db_name", "publicdata");
-    				objUSGSInfo.putObject("dbconfig", objDBConfig);
-    				eb.send("usgsCollector", objUSGSInfo);
+    				eb.send("usgsCollect", "");
+    				
+//    				JsonObject objUSGSInfo = new JsonObject();
+//    				JsonObject objDBConfig = new JsonObject();
+//    				objDBConfig.putString("host", "localhost");
+//    				objDBConfig.putNumber("port", 30000);
+//    				objDBConfig.putString("db_name", "publicdata");
+//    				objUSGSInfo.putObject("dbconfig", objDBConfig);
+//    				eb.send("usgsCollector", objUSGSInfo);
     				return;
     			case "registerTG" :
 //    				JsonObject objTGInfo = new JsonObject();
