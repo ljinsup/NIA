@@ -10,27 +10,26 @@ shinyServer(function(input, output, session) {
   
   output$USGSUI <- renderGvis({
     usgs <- data.frame()
+    
+    tryCatch({
     usgs <<- getAllData(mongo_usgs, "USGS공공데이터")
-    if(nrow(usgs) == 0 ){
-     
-    }
-    else{
+    
       usgs[,"loc"] <- as.data.frame(paste(usgs$lat, usgs$lng, sep = ":"))
       usgs[,"data"] <- as.data.frame(paste(usgs$title, usgs$magnitude, sep = " "))
-      M <- gvisGeoMap(usgs,
+      gvisGeoMap(usgs,
                       locationvar="loc", 
                       numvar="magnitude", 
                       hovervar="title", 
                       options=list(height=1800, 
-                                   width=1800,
+                                 width=1800,
                                    region="KR", 
                                    dataMode="markers",
                                    showLegend=FALSE
                                    ))
-      plot(M)
-    }
-    
-    
+      
+    }, error = function(e) {
+      h1("USGS 데이터가 없습니다.")
+    })
   })
   
 #   output$SensorMapUI <- renderGvis({
@@ -95,15 +94,22 @@ shinyServer(function(input, output, session) {
     input$serviceremove
     res.frame <- data.frame() 
     
-    cursor <- mongo.find(mongo=mongo_public,
-                         ns=paste(attr(mongo_public, "db"), "pdList", sep="."),
+    cursor <- mongo.find(mongo=mongo_db,
+                         ns=paste(attr(mongo_db, "db"), "pdList", sep="."),
                          query=mongo.bson.empty(),
                          fields=mongo.bson.from.JSON('{"_id":0}'))
+    
+    if(mongo.cursor.next(cursor)){
+    res <- mongo.cursor.value(cursor)
+    res <- mongo.bson.to.list(res)
+    res <- as.data.frame(res)
+    res.frame <- cbind(res)
+    }
     while(mongo.cursor.next(cursor)){
       res <- mongo.cursor.value(cursor)
       res <- mongo.bson.to.list(res)
       res <- as.data.frame(res)
-      res.frame <- rbind(res.frame, res)
+      res.frame <- cbind(res.frame, res)
     }
     if(nrow(res.frame) == 0)
       return(NULL)
@@ -117,7 +123,7 @@ shinyServer(function(input, output, session) {
       mongo.bson.buffer.append(bson, "collection", unlist(strsplit(data, split = " "))[1])
       bson <- mongo.bson.from.buffer(bson)
       
-      mongo.remove(mongo_public, paste(attr(mongo_public, "db"), "service", sep = "."), bson)
+      mongo.remove(mongo_db, paste(attr(mongo_db, "db"), "service", sep = "."), bson)
       
     }
   })

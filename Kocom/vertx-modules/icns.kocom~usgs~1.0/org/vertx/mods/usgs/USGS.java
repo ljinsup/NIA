@@ -3,6 +3,10 @@ package org.vertx.mods.usgs;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -26,7 +30,12 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 	@Override
 	public void start() {
 		super.start();
-		dbConfig = getOptionalObjectConfig("dbConfig", null);
+		
+		dbConfig = getOptionalObjectConfig("dbconfig", null);
+		
+		//dbConfig.removeField("db_name");
+		
+		//dbConfig.putString("db_name", "usgsdata");
 		
 		eb.registerHandler("usgsCollect", this);
 	}
@@ -35,10 +44,23 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 	public void handle(Message<JsonObject> arg0) {
 		
 		if(id == -1){
+			
+			//
+			try {
+				Class.forName("com.mysql.jdbc.Driver");
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			final String url = "jdbc:mysql://localhost:3306/testdb";
+			final String username = "root";
+			final String password = "zhzha123!@#";
+			
 			System.out.println("USGS Timer started *******");
-			id = vertx.setTimer(65 * 1000 * 60 * 60, new Handler<Long>() {
+			id = vertx.setTimer(1 * 1000 * 60, new Handler<Long>() {
 				@Override
 				public void handle(Long arg0) {
+					System.out.println("USGS Timer - callback *******");
 					
 					container.deployModule("mongo-persistor", dbConfig, new Handler<AsyncResult<String>>() {
 						@Override
@@ -59,6 +81,12 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 								
 								System.out.println("******************************************************************");
 								
+								String magnitude = " ";
+								String time = " ";
+								String latitude = " ";
+								String longitude = " ";
+								String depth = " ";
+								
 								JsonArray arItems = new JsonArray();
 								for(int i = 0; i < nodes.getLength(); i++){
 									NodeList childs = nodes.item(i).getChildNodes();
@@ -75,10 +103,15 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 											
 											objItem.putString("title", title);
 											objItem.putString("magnitude", arTitle[0]);
+											//
+											magnitude = arTitle[0];
 											break;
 										case "updated":
 											System.out.println(child.getNodeName() + " : " + child.getTextContent());
 											objItem.putString("updated", child.getTextContent());
+											
+											//
+											time = child.getTextContent();
 											break;
 										case "georss:point":
 											System.out.println(child.getNodeName() + " : " + child.getTextContent());
@@ -86,6 +119,15 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 											objItem.putString("lat", arGPS[0]);
 											objItem.putString("lng", arGPS[1]);
 											arItems.addObject(objItem);
+											
+											//
+											latitude = arGPS[0];
+											longitude = arGPS[1];
+											break;
+										//
+										case "georss:elev":
+											System.out.println(child.getNodeName() + " : " + child.getTextContent());
+//											depth = child.getTextContent();
 											break;
 										}
 									}
@@ -102,6 +144,13 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 								JsonObject data = new JsonObject(sendData.toMap());
 								eb.send("mongo-persistor", data);
 								
+								//
+								Connection conn = DriverManager.getConnection(url, username, password);
+								Statement stmt = conn.createStatement();
+								
+								String sql = "INSERT INTO events (EID, Magnitude, Time, Latitude, Longitude, Depth, Idx) VALUE (1 + '" + magnitude +"','" + time +"','" + latitude +"','"+ longitude + "','" + depth + "' + 'asdf')";
+								stmt.executeUpdate(sql);
+								
 								System.out.println("******************************************************************");
 								
 								
@@ -117,6 +166,9 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (SQLException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}

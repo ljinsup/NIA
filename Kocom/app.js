@@ -19,6 +19,7 @@ var mqttconf = {
     dbConfig: dbconfig
 };
 
+
 container.deployModule('icns.kocom~mongo-persistor~1.0', dbconfig, function () {
 
     // And when it's deployed run a script to load it with some reference
@@ -79,7 +80,7 @@ container.deployModule('icns.kocom~mqtt-client~0.1', mqttconf, 1, function (err)
     }
 });
 
-container.deployModule('icns.kocom~usgs~1.0',  function (err) { // deploy public data collector module
+container.deployModule('icns.kocom~usgs~1.0', dbconfig, function (err) { // deploy public data collector module
     if (err != null) {
         err.printStackTrace(); // error print;
     }

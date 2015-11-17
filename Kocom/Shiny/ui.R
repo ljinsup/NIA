@@ -24,7 +24,7 @@ shinyUI(basicPage(
               tabPanel("지진 데이터",
                        ############### DB UI ###############
                        fixedPage(
-                         uiOutput("USGSUI")
+                         htmlOutput("USGSUI")
                        )
               ),
               tabPanel("센서 맵",

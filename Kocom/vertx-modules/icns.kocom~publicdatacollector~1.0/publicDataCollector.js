@@ -48,6 +48,7 @@ eventbus.registerHandler("pdCollector", function (message, replier) {
             // receive XML DATA
 
             resp.endHandler(function () { // end the receive data
+	
                 var jsonObjTemp = xml2json.parser(body); // xml to json converting
                 var jsonObj = JSON.parse(JSON.stringify(jsonObjTemp.response.body.items.item)); // extracting valuable data
                 console.log(JSON.stringify(jsonObj));
@@ -83,6 +84,7 @@ eventbus.registerHandler("pdCollector", function (message, replier) {
                         }
                     }
                 });
+
             });
         });
     });
