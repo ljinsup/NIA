@@ -8,10 +8,49 @@ library(CEMS)
 
 shinyServer(function(input, output, session) {
   
-  output$USGSUI <- renderGvis({
+  readUSGS <- reactive({
+    input$minusgs
+    input$maxusgs
+    
     usgs <- data.frame()
     
     tryCatch({
+<<<<<<< HEAD
+      usgs <- getAllData(mongo_usgs, "USGS공공데이터")
+      result <- data.frame()
+      usgs[,"loc"] <- as.data.frame(paste(usgs$lat, usgs$lng, sep = ":"))
+      usgs[,"updated"] <- as.POSIXct(gsub(pattern = "T", replacement = " ", x = usgs$updated))
+      usgs[,"data"] <- as.data.frame(paste(usgs$updated, usgs$title, usgs$magnitude, sep = " "))
+      
+      for(i in 1:nrow(usgs)){
+        if( usgs[i,"updated"] > as.POSIXct(input$minusgs)){
+          if(usgs[i, "updated"] < as.POSIXct(input$maxusgs)) {
+            result <- rbind(result, usgs[i,])
+          }}
+      }
+      usgs <<- usgs
+      return(result)
+    }, error = function(e) {
+      result <- NULL
+    })
+  })
+  
+  output$USGSUI <- renderGvis({
+    usgs <- readUSGS()
+    if(is.null(usgs)){h1("USGS 데이터가 없습니다.")}
+    else{
+    gvisGeoMap(usgs,
+               locationvar="loc", 
+               numvar="magnitude", 
+               hovervar="data", 
+               options=list(height=1000, 
+                            width=1900,
+                            #region="KR", 
+                            dataMode="markers",
+                            showLegend=FALSE
+               ))
+    }
+=======
     usgs <<- getAllData(mongo_usgs, "USGS공공데이터")
     
       usgs[,"loc"] <- as.data.frame(paste(usgs$lat, usgs$lng, sep = ":"))
@@ -30,8 +69,26 @@ shinyServer(function(input, output, session) {
     }, error = function(e) {
       h1("USGS 데이터가 없습니다.")
     })
+>>>>>>> e6ef85251eb3d63c9b965fad03caf39ef5a01658
   })
   
+  
+#   
+#   readSensors <- reactive({
+#     invalidateLater(1000,session)
+#     
+#     sensors <- data.frame()
+#     result <- 
+#     tryCatch({
+#       sensors <- getAllData(mongo_public, "센서데이터")
+#       }
+#       
+#       return(result)
+#     }, error = function(e) {
+#       result <- NULL
+#     })
+#   })
+#  
 #   output$SensorMapUI <- renderGvis({
 #     
 #     
@@ -55,7 +112,7 @@ shinyServer(function(input, output, session) {
       progress <- Progress$new()
       progress$set(message = paste(topic, msg, sep = " + "))
       
-      mqtt$SEND("127.0.0.1", "1883", topic, msg)  
+      mqtt$SEND(HOST, "1883", topic, msg)  
 
   })
   
@@ -74,7 +131,8 @@ shinyServer(function(input, output, session) {
   })
   
   output$PublicListUI <- renderUI({
-      if(is.null(publictabledata())) {
+    publictable <- publictabledata()
+      if(is.null(publictable)) {
         fluidPage(h1("공공데이터를 넣어주세요."),
                   actionButton("refreshpubliclist", "새로 고침")
         )
@@ -82,7 +140,7 @@ shinyServer(function(input, output, session) {
       else {
         fluidPage(
           checkboxGroupInput("servicelist", label = h4("공공데이터 목록"),
-                             choices = publictabledata(), selected = NULL),
+                             choices = as.list(paste(publictable[,"worker"], publictable[,"collection"], publictable[,"url"], sep = " ")), selected = NULL),
           actionButton("serviceremove", label = "제거")
         )}
   })
@@ -103,18 +161,26 @@ shinyServer(function(input, output, session) {
     res <- mongo.cursor.value(cursor)
     res <- mongo.bson.to.list(res)
     res <- as.data.frame(res)
+<<<<<<< HEAD
+    res.frame <- rbind(res)
+=======
     res.frame <- cbind(res)
+>>>>>>> e6ef85251eb3d63c9b965fad03caf39ef5a01658
     }
     while(mongo.cursor.next(cursor)){
       res <- mongo.cursor.value(cursor)
       res <- mongo.bson.to.list(res)
       res <- as.data.frame(res)
+<<<<<<< HEAD
+      res.frame <- rbind.fill(res.frame, res)
+=======
       res.frame <- cbind(res.frame, res)
+>>>>>>> e6ef85251eb3d63c9b965fad03caf39ef5a01658
     }
     if(nrow(res.frame) == 0)
       return(NULL)
     else
-      return(as.list(paste(res.frame[,3], res.frame[,1], sep = " ")))
+      return(res.frame)
   })
   
   observeEvent(input$publicremove, function() {
@@ -166,7 +232,7 @@ shinyServer(function(input, output, session) {
     ######################################
  
       basicPage(
-        sidebarPanel(textOutput("text"), HTML("<br>"), actionButton("init", label = "초기화"), width=12),  
+#        sidebarPanel(textOutput("text"), HTML("<br>"), actionButton("init", label = "초기화"), width=12),  
         
         tabsetPanel(id="tab", type="pills",
                     
@@ -204,7 +270,7 @@ shinyServer(function(input, output, session) {
                                
                                uiOutput("publicselectui"),
                                
-                               uiOutput("sensorselectui"),
+#                               uiOutput("sensorselectui"),
                                
                                selectInput("analysismethod", label = h4("분석 방법 선택"), 
                                            choices = c("", "예측분석", "비율분석", "비교분석")),
@@ -280,38 +346,48 @@ shinyServer(function(input, output, session) {
   
   #                             SERVICE LIST                             #
   ##############################    FUNC    ##############################
-  tabledata <- reactive({
-    input$refreshlist
-    input$publiceremove
-    res.frame <- data.frame() 
-    
-    cursor <- mongo.find(mongo=mongo_service,
-                         ns=paste(attr(mongo_service, "db"), "service", sep="."),
-                         query=mongo.bson.empty(),
-                         fields=mongo.bson.from.JSON('{"_id":0, "service_id":1, "description":1}'))
-    while(mongo.cursor.next(cursor)){
-      res <- mongo.cursor.value(cursor)
-      res <- mongo.bson.to.list(res)
-      res <- as.data.frame(res)
-      res.frame <- rbind(res.frame, res)
-    }
-    if(nrow(res.frame) == 0)
-      return(NULL)
-    else
-      return(as.list(paste(res.frame[,1], res.frame[,2], sep = " ")))
-  })
+#   tabledata <- reactive({
+#     input$refreshlist
+#     input$publiceremove
+#     res.frame <- data.frame() 
+#     
+#     cursor <- mongo.find(mongo=mongo_service,
+#                          ns=paste(attr(mongo_service, "db"), "service", sep="."),
+#                          query=mongo.bson.empty(),
+#                          fields=mongo.bson.from.JSON('{"_id":0, "service_id":1, "description":1}'))
+#     while(mongo.cursor.next(cursor)){
+#       res <- mongo.cursor.value(cursor)
+#       res <- mongo.bson.to.list(res)
+#       res <- as.data.frame(res)
+#       res.frame <- rbind(res.frame, res)
+#     }
+#     if(nrow(res.frame) == 0)
+#       return(NULL)
+#     else
+#       return(as.list(paste(res.frame[,1], res.frame[,2], sep = " ")))
+#   })
   ########################################################################
-  observeEvent(input$serviceremove, function() {
-    for(data in input$servicelist){
-      bson <- mongo.bson.buffer.create()
-      mongo.bson.buffer.append(bson, "service_id", unlist(strsplit(data, split = " "))[1])
-      bson <- mongo.bson.from.buffer(bson)
-      
-      mongo.remove(mongo_service, paste(attr(mongo_service, "db"), "service", sep = "."), bson)
-      
-    }
-  })
-  
+#   observeEvent(input$serviceremove, function() {
+#     for(data in input$servicelist){
+#       bson <- mongo.bson.buffer.create()
+#       mongo.bson.buffer.append(bson, "service_id", unlist(strsplit(data, split = " "))[1])
+#       bson <- mongo.bson.from.buffer(bson)
+#       
+#       mongo.remove(mongo_service, paste(attr(mongo_service, "db"), "service", sep = "."), bson)
+#       
+#     }
+#   })
+observeEvent(input$serviceremove, function() {
+  msg <- list()
+  list <- c()
+  for(data in input$servicelist){
+    list <- union(list, unlist(strsplit(data, " "))[1])
+    print(list)
+  }
+  msg$type <- "fire"
+  msg$id <- list
+  print(toJSON(msg))
+})
   
   
   
@@ -853,7 +929,7 @@ shinyServer(function(input, output, session) {
     
       msg <- toJSON(list)
 #      print(list)    
-      mqtt$SEND("127.0.0.1", "1883", topic, msg)  
+      mqtt$SEND(HOST, "1883", topic, msg)  
       print(topic)
       }
     else {

@@ -1,6 +1,8 @@
 package org.vertx.mods.usgs;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
@@ -57,7 +59,7 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 			final String password = "zhzha123!@#";
 			
 			System.out.println("USGS Timer started *******");
-			id = vertx.setTimer(1 * 1000 * 60, new Handler<Long>() {
+			id = vertx.setPeriodic(10 * 1000, new Handler<Long>() {
 				@Override
 				public void handle(Long arg0) {
 					System.out.println("USGS Timer - callback *******");
@@ -81,11 +83,12 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 								
 								System.out.println("******************************************************************");
 								
-								String magnitude = " ";
-								String time = " ";
-								String latitude = " ";
-								String longitude = " ";
-								String depth = " ";
+								java.math.BigDecimal magnitude = new BigDecimal("0.0");
+								java.math.BigInteger time = new BigInteger("0");
+								double latitude = 0;
+								double longitude = 0;
+								double depth = 0;
+								String idx = null;
 								
 								JsonArray arItems = new JsonArray();
 								for(int i = 0; i < nodes.getLength(); i++){
@@ -96,6 +99,11 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 									for(int j = 0; j < childs.getLength(); j++){
 										Node child = childs.item(j);
 										switch(child.getNodeName()){
+										case "id":
+											String[] i_temp;
+											i_temp = child.getTextContent().split(":");
+											idx = i_temp[3];
+											break;
 										case "title":
 											String[] arTitle = child.getTextContent().substring(2).split(" - ");
 											String title = arTitle[1].split(" of ", 2)[1];
@@ -104,36 +112,47 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 											objItem.putString("title", title);
 											objItem.putString("magnitude", arTitle[0]);
 											//
-											magnitude = arTitle[0];
+											magnitude = new BigDecimal(arTitle[0]);
 											break;
 										case "updated":
 											System.out.println(child.getNodeName() + " : " + child.getTextContent());
 											objItem.putString("updated", child.getTextContent());
 											
 											//
-											time = child.getTextContent();
+											String[] temp;
+											String[] temp2;
+											temp = child.getTextContent().split("T");
+											temp2 = temp[0].split("-");
+											String s_time = temp2[0] + temp2[1] + temp2[2];
+											time = new BigInteger(s_time);
 											break;
 										case "georss:point":
 											System.out.println(child.getNodeName() + " : " + child.getTextContent());
 											String[] arGPS = child.getTextContent().split(" ");
 											objItem.putString("lat", arGPS[0]);
 											objItem.putString("lng", arGPS[1]);
-											arItems.addObject(objItem);
 											
 											//
-											latitude = arGPS[0];
-											longitude = arGPS[1];
+											latitude = Double.parseDouble(arGPS[0]);
+											longitude = Double.parseDouble(arGPS[1]);
 											break;
 										//
 										case "georss:elev":
 											System.out.println(child.getNodeName() + " : " + child.getTextContent());
-//											depth = child.getTextContent();
+											depth = Double.parseDouble(child.getTextContent());
 											break;
 										}
 									}
 									
 									System.out.println("---------------------------------------------------------------------------------------");
 									arItems.add(objItem);
+									
+									//
+									Connection conn = DriverManager.getConnection(url, username, password);
+									Statement stmt = conn.createStatement();
+									
+									String sql = "INSERT INTO events (Magnitude, Time, Latitude, Longitude, Depth, Idx) VALUE (" + magnitude +"," + time +"," + latitude +","+ longitude + "," + depth + ", '" + idx + "')";
+									stmt.executeUpdate(sql);
 								}
 								
 								JsonObject sendData = new JsonObject();
@@ -143,13 +162,6 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 								sendData.putString("db_name", "usgsdata");
 								JsonObject data = new JsonObject(sendData.toMap());
 								eb.send("mongo-persistor", data);
-								
-								//
-								Connection conn = DriverManager.getConnection(url, username, password);
-								Statement stmt = conn.createStatement();
-								
-								String sql = "INSERT INTO events (EID, Magnitude, Time, Latitude, Longitude, Depth, Idx) VALUE (1 + '" + magnitude +"','" + time +"','" + latitude +"','"+ longitude + "','" + depth + "' + 'asdf')";
-								stmt.executeUpdate(sql);
 								
 								System.out.println("******************************************************************");
 								
@@ -179,6 +191,7 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 					
 				}
 			});
+			
 		} else {
 			System.out.println("Timer is already running");
 		}

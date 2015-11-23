@@ -11,15 +11,15 @@ requirement <<- list()
 epl <<- list()
 sensorlist <<- list()
 
-DBHOST <- "163.180.117.96"
-DBPORT <- 30000
+HOST <- "163.180.117.96"
+PORT <- 30000
 
-mongo_db <- CEMS::connectMongo(Addr = DBHOST, DB="scconfig", port=DBPORT)
-mongo_user <- CEMS::connectMongo(Addr = DBHOST, DB="userdata", port=DBPORT)
-mongo_service <- CEMS::connectMongo(Addr = DBHOST, DB="clouddata", port=DBPORT)
-mongo_tg <- CEMS::connectMongo(Addr = DBHOST, DB="sensordata", port=DBPORT)
-mongo_public <- CEMS::connectMongo(Addr = DBHOST, DB="publicdata", port=DBPORT)
-mongo_usgs <- CEMS::connectMongo(Addr = DBHOST, DB="usgsdata", port=DBPORT)
+mongo_db <- CEMS::connectMongo(Addr = HOST, DB="scconfig", port=PORT)
+mongo_user <- CEMS::connectMongo(Addr = HOST, DB="userdata", port=PORT)
+mongo_service <- CEMS::connectMongo(Addr = HOST, DB="clouddata", port=PORT)
+mongo_tg <- CEMS::connectMongo(Addr = HOST, DB="sensordata", port=PORT)
+mongo_public <- CEMS::connectMongo(Addr = HOST, DB="publicdata", port=PORT)
+mongo_usgs <- CEMS::connectMongo(Addr = HOST, DB="usgsdata", port=PORT)
 
 dblist <- rmongodb::mongo.get.database.collections(mongo_db, attr(mongo_db, "db"))
 tglist <- rmongodb::mongo.get.database.collections(mongo_user, attr(mongo_user, "db"))
