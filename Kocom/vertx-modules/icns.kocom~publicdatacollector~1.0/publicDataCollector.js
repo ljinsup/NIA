@@ -1,16 +1,3 @@
-/*********************************************************************
- 
- eventbus data format
- 
- url : API url(UTF-8)
- apikey : data.go.kr API KEY(UTF-8)
- collection : name of API DATA NAME
- dbconfig : database configure data
- period : period of data collect(hours)
- usetime : if Service depend on time -> 1 (weather)
- not depend on time -> 0
- 
- *********************************************************************/
 
 var vertx = require('vertx');
 var console = require('vertx/console');
@@ -22,16 +9,18 @@ var xml2json = require('xml2json');
 pa = "mongo-persistor";
 eb = vertx.eventBus;
 
+
+
 eventbus.registerHandler("pdCollector", function (message, replier) {
     var clientURL = message.url.substring(0, message.url.indexOf("/"));
     var serviceURL = message.url.substring(message.url.indexOf("/"));
     var usetime = message.usetime;
     // parsing the url data
     var dbConfig = message.dbconfig;
-    var period = message.period * 1000 * 60 * 60 // transfer hour to millisecond
+    var period = message.period * 1000 * 5 // transfer hour to millisecond
     var time = new Date();
 
-    var timerID = timer.setPeriodic(period, function () {
+        var timerID = timer.setPeriodic(period, function () {
         var client = vertx.createHttpClient().host(clientURL); // make connect(to api server)
         if (usetime) {
             var fullurl = serviceURL + '&base_time=' + time.getHours() + '00&ServiceKey=' + message.apikey;
@@ -48,7 +37,7 @@ eventbus.registerHandler("pdCollector", function (message, replier) {
             // receive XML DATA
 
             resp.endHandler(function () { // end the receive data
-	
+    
                 var jsonObjTemp = xml2json.parser(body); // xml to json converting
                 var jsonObj = JSON.parse(JSON.stringify(jsonObjTemp.response.body.items.item)); // extracting valuable data
                 console.log(JSON.stringify(jsonObj));
@@ -86,10 +75,17 @@ eventbus.registerHandler("pdCollector", function (message, replier) {
                 });
 
             });
+
+    
+
         });
+  
     });
 
-    eb.send(pa, {
+          // if timerID is Integer type
+      if(timerID === parseInt(timerID, 10)){
+console.log("**********************************************************    PDLIST saved!!! ::" + timerID);
+           eb.send(pa, {
         action: 'save',
         db_name: 'scconfig',
         collection: "pdList",
@@ -103,6 +99,7 @@ eventbus.registerHandler("pdCollector", function (message, replier) {
     }, function (reply) {
         var status = reply.status;
         console.log(status);
-    });
-
+          });
+      }
+      
 });

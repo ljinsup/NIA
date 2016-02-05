@@ -18,6 +18,7 @@ import org.eclipse.paho.client.mqttv3.MqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
+import org.eclipse.paho.client.mqttv3.MqttSecurityException;
 import org.eclipse.paho.client.mqttv3.MqttTopic;
 import org.vertx.java.busmods.BusModBase;
 import org.vertx.java.core.AsyncResult;
@@ -140,7 +141,7 @@ public class MQTT extends BusModBase implements Handler<Message<JsonObject>>
         System.out.println("topicdata : " + topicdata);
         
         
-        String subtopic = keytopic + "/" + topicdata;
+        String subtopic = keytopic + "/" + topicdata + "/#";
         //String subtopic = (new StringBuilder(String	.valueOf(keytopic))).append("/").append(topicdata).toString();
         
         System.out.println("subtopic : " + subtopic);
@@ -153,6 +154,13 @@ public class MQTT extends BusModBase implements Handler<Message<JsonObject>>
                 public void connectionLost(Throwable throwable)
                 {
                 	System.out.println("connection lost");
+                	try {
+						mClient.connect();
+					} catch (MqttSecurityException e) {
+						// TODO Auto-generated catch block
+					} catch (MqttException e) {
+						// TODO Auto-generated catch block
+					}
                 }
 
                 public void deliveryComplete(IMqttDeliveryToken imqttdeliverytoken)
@@ -216,7 +224,8 @@ public class MQTT extends BusModBase implements Handler<Message<JsonObject>>
     			case "Log": 
     				db_name = "logdata";
     				break;
-    			case "TGdata": 
+//    			case "TGdata": 
+    			case "Sensordata": 
     				db_name = "sensordata";
     				break;
     			case "EPL":
@@ -231,44 +240,33 @@ public class MQTT extends BusModBase implements Handler<Message<JsonObject>>
     				 * */
     				
     				
-//    				JsonObject objPublicData = new JsonObject();
-//    				JsonObject objConfig = new JsonObject();
-//    				objConfig.putString("host", "localhost");
-//    				objConfig.putNumber("port", 30000);
-//    				objConfig.putString("db_name", "publicdata");
-//    				objPublicData.putObject("dbconfig", objConfig);
-//    				objPublicData.putString("url", doc.getString("url"));
-//    				objPublicData.putString("apikey", doc.getString("apikey"));
-//    				objPublicData.putString("collection", doc.getString("collection"));
-//    				objPublicData.putString("period", doc.getString("period"));
-//    				
-//    				eb.send("pdCollector", objPublicData);
+    				JsonObject objPublicData = new JsonObject();
+    				JsonObject objConfig = new JsonObject();
+    				objConfig.putString("host", "localhost");
+    				objConfig.putNumber("port", 30000);
+    				objConfig.putString("db_name", "publicdata");
+    				objPublicData.putObject("dbconfig", objConfig);
+    				objPublicData.putString("url", doc.getString("url"));
+    				objPublicData.putString("apikey", doc.getString("apikey"));
+    				objPublicData.putString("collection", doc.getString("collection"));
+    				objPublicData.putString("period", doc.getString("period"));
     				
-    				System.out.println("Public data worker will be performed...");
+    				eb.send("pdCollector", objPublicData);
     				
-    				
-    				JsonObject objTGInfo = new JsonObject();
-    				objTGInfo.putString("tgID", "TG01");
-    				objTGInfo.putString("secureNum", "123456");
-    				eb.send("tgRegister", objTGInfo);
-    				
-    				System.out.println("TG is registered...");
-    				
-//    				JsonObject objPDInfo = new JsonObject();
-//    				
-//    				objPDInfo.putString("action", "save");
-//    				objPDInfo.putString("collection", "pdList");
-//    				objPDInfo.putString("db_name", "scconfig");
-//    				objPDInfo.putObject("document", doc);
-//    				
-//    				eb.send("mongo-persistor", objPDInfo);
-//    				
-//    				System.out.println("Public data information is stored");
+    				System.out.println("Public data worker will be performed...");   				
     				
     				return;
     			case "PDRemove":
+    				JsonObject dbConfig = new JsonObject();
     				JsonObject objPDInfo = new JsonObject();
+    				dbConfig.putString("host",  "localhost");
+    				dbConfig.putNumber("port",  30000);
+    				dbConfig.putString("db_name", "scconfig");
     				objPDInfo.putString("worker", doc.getString("worker"));
+    				objPDInfo.putObject("dbconfig", dbConfig);
+    				
+    				System.out.println(objPDInfo.toString());
+    				
     				eb.send("pdRemover", objPDInfo);
     				return;
     			case "usgsCollect" :
@@ -302,7 +300,7 @@ public class MQTT extends BusModBase implements Handler<Message<JsonObject>>
     			SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.KOREA);
     			Date currentTime = new Date();
     			String dTime = formatter.format(currentTime); // add to time at message
-    			doc.putString("time", dTime);
+    			doc.putString("updated", dTime);
     			JsonObject sendData = new JsonObject();
     			sendData.putString("collection",TGID);
     			doc.removeField("TG_ID");

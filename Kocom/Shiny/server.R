@@ -1,10 +1,3 @@
-library(shiny)
-library(rjson)
-library(rJava)
-library(forecast)
-library(googleVis)
-library(CEMS)
-
 
 shinyServer(function(input, output, session) {
   
@@ -15,20 +8,19 @@ shinyServer(function(input, output, session) {
     usgs <- data.frame()
     
     tryCatch({
-<<<<<<< HEAD
       usgs <- getAllData(mongo_usgs, "USGS공공데이터")
       result <- data.frame()
       usgs[,"loc"] <- as.data.frame(paste(usgs$lat, usgs$lng, sep = ":"))
       usgs[,"updated"] <- as.POSIXct(gsub(pattern = "T", replacement = " ", x = usgs$updated))
-      usgs[,"data"] <- as.data.frame(paste(usgs$updated, usgs$title, usgs$magnitude, sep = " "))
-      
+      usgs[,"data"] <- as.data.frame(paste(usgs$updated, usgs$title, sep = "-"))
+      usgs[,"magnitude"] <- as.numeric(as.character(usgs$magnitude))
       for(i in 1:nrow(usgs)){
         if( usgs[i,"updated"] > as.POSIXct(input$minusgs)){
           if(usgs[i, "updated"] < as.POSIXct(input$maxusgs)) {
             result <- rbind(result, usgs[i,])
           }}
       }
-      usgs <<- usgs
+      usgs <<- result
       return(result)
     }, error = function(e) {
       result <- NULL
@@ -43,56 +35,59 @@ shinyServer(function(input, output, session) {
                locationvar="loc", 
                numvar="magnitude", 
                hovervar="data", 
-               options=list(height=1000, 
-                            width=1900,
+               options=list(height=800, 
+                            width=1500,
                             #region="KR", 
                             dataMode="markers",
                             showLegend=FALSE
                ))
     }
-=======
-    usgs <<- getAllData(mongo_usgs, "USGS공공데이터")
-    
-      usgs[,"loc"] <- as.data.frame(paste(usgs$lat, usgs$lng, sep = ":"))
-      usgs[,"data"] <- as.data.frame(paste(usgs$title, usgs$magnitude, sep = " "))
-      gvisGeoMap(usgs,
-                      locationvar="loc", 
-                      numvar="magnitude", 
-                      hovervar="title", 
-                      options=list(height=1800, 
-                                 width=1800,
-                                   region="KR", 
-                                   dataMode="markers",
-                                   showLegend=FALSE
-                                   ))
-      
-    }, error = function(e) {
-      h1("USGS 데이터가 없습니다.")
     })
->>>>>>> e6ef85251eb3d63c9b965fad03caf39ef5a01658
+  
+  
+  
+  readSensors <- reactive({
+    invalidateLater(10000,session)
+    sensors <- data.frame()
+    collections <- mongo.get.database.collections(mongo_sensor, attr(mongo_sensor, "db"))
+    
+    for(coll in collections){
+      colldata <- getAllData(mongo_sensor, unlist(strsplit(coll, split = ".", fixed = T))[2], "updated")
+      sensor <- colldata[nrow(colldata),]
+      
+      
+      if(difftime(Sys.time() , as.POSIXct(sensor$updated), units = "mins") > 3){
+        sensor$state <- 1
+      }
+      else if(
+        abs(CEMS::Comparing(as.numeric(as.character(colldata[nrow(colldata), "sensors_data.temp"])), as.data.frame(as.numeric(as.character(colldata$sensors_data.temp))))) > 50
+      ){
+        sensor$state <- 2
+      }
+      else{
+        sensor$state <- 0
+      }
+      sensor$location <- paste(as.character(sensor$longitude), as.character(sensor$latitude), sep = ":")
+      sensor$data <- paste("temp: ", as.character(sensor$sensors_data.temp), ", light: ", as.character(sensor$sensors_data.light), sep = " ")
+      sensor$data <- paste(sensor$sensor_id, sensor$data, sep = " - ")
+      sensors <- rbind.fill(sensors, sensor)
+    }
+    
+    return(sensors)
   })
-  
-  
-#   
-#   readSensors <- reactive({
-#     invalidateLater(1000,session)
-#     
-#     sensors <- data.frame()
-#     result <- 
-#     tryCatch({
-#       sensors <- getAllData(mongo_public, "센서데이터")
-#       }
-#       
-#       return(result)
-#     }, error = function(e) {
-#       result <- NULL
-#     })
-#   })
-#  
-#   output$SensorMapUI <- renderGvis({
-#     
-#     
-#   })
+ 
+  output$SensorMapUI <- renderGvis({
+    sensordata <<- readSensors()
+    sensormap <- gvisGeoMap(sensordata, 
+                            locationvar="location", 
+                            numvar="state",
+                            hovervar="data", 
+                            options=list(height=1000,
+                                         width=1000,
+                                         region="KR", 
+                                         dataMode="markers"))
+    
+  })
   
   #########################################################################
   
@@ -161,21 +156,21 @@ shinyServer(function(input, output, session) {
     res <- mongo.cursor.value(cursor)
     res <- mongo.bson.to.list(res)
     res <- as.data.frame(res)
-<<<<<<< HEAD
+
     res.frame <- rbind(res)
-=======
+
     res.frame <- cbind(res)
->>>>>>> e6ef85251eb3d63c9b965fad03caf39ef5a01658
+
     }
     while(mongo.cursor.next(cursor)){
       res <- mongo.cursor.value(cursor)
       res <- mongo.bson.to.list(res)
       res <- as.data.frame(res)
-<<<<<<< HEAD
+
       res.frame <- rbind.fill(res.frame, res)
-=======
+
       res.frame <- cbind(res.frame, res)
->>>>>>> e6ef85251eb3d63c9b965fad03caf39ef5a01658
+
     }
     if(nrow(res.frame) == 0)
       return(NULL)
@@ -232,8 +227,6 @@ shinyServer(function(input, output, session) {
     ######################################
  
       basicPage(
-#        sidebarPanel(textOutput("text"), HTML("<br>"), actionButton("init", label = "초기화"), width=12),  
-        
         tabsetPanel(id="tab", type="pills",
                     
                     tabPanel("1단계: 공공데이터 선택",
@@ -270,124 +263,38 @@ shinyServer(function(input, output, session) {
                                
                                uiOutput("publicselectui"),
                                
-#                               uiOutput("sensorselectui"),
-                               
                                selectInput("analysismethod", label = h4("분석 방법 선택"), 
                                            choices = c("", "예측분석", "비율분석", "비교분석")),
-                               
-#                                actionButton("methodadd", label = "추가"),
-#                                actionButton("methodremove", label = "제거"),
                                
                                uiOutput("methodui")
                                )}
                              )
-#                             ,
-#                    tabPanel("3단계: 결과 수행 선택",
-#                             ############### Result UI ###############
-#                             if(length(dblist)==0){    
-#                               h1("공공데이터를 넣어주세요")
-#                             }
-#                             else{
-#                             fixedPage(
-#                               actionButton("refresh2", label = "새로 고침"),
-#                               
-#                               uiOutput("resultui"),
-#                               
-#                               uiOutput("rangeui"),
-#                               
-#                               selectInput("resulttype", label = h3("처리 방법"), 
-#                                           choices = c("", "추가분석", "Actuator제어", "Push메시지")),
-#                               
-#                               uiOutput("resulttypeui"),
-#                               
-#                               actionButton("resultadd", label = "추가"),
-#                               actionButton("resultremove", label = "제거")               
-#                               )}
-#                             ),
-#                    tabPanel("기타 설정",
-#                             fixedPage(
-#                               h3("EPL 생성"),
-#                               column(2, offset=1,
-#                                      selectInput("eplsensor", label = NULL, 
-#                                                  choices = c("",
-#                                                              "GA-가스센서1",
-#                                                              "GB-가스센서2",
-#                                                              "VB-진동센서",
-#                                                              "IR-적외선센서",
-#                                                              "AC-가속도센서",
-#                                                              "TH-온습도센서",
-#                                                              "MA-마그넷센서",
-#                                                              "DB-dB센서",
-#                                                              "CS-조도센서",
-#                                                              "FL-불꽃센서",
-#                                                              "SH-소리센서"))
-#                               ),
-#                               column(2, 
-#                                      selectInput("eploperator", label = NULL, 
-#                                                  choices = c("", ">", ">=", "==", "<=", "<"))
-#                               ),
-#                               column(2, 
-#                                      textInput("eplvalue", label=NULL)
-#                               ),
-#                               actionButton("epladd", label = "추가"),
-#                               actionButton("eplremove", label = "제거"),
-#                               
-#                               textInput("serviceid", "서비스 관리 번호:"),
-#                               textInput("description", "설명:"),
-#                               actionButton("save", label = "저장")                                                           
-#                               )
-#                             )
-                    
                     )
         )
         
     })
     })
   
-  #                             SERVICE LIST                             #
-  ##############################    FUNC    ##############################
-#   tabledata <- reactive({
-#     input$refreshlist
-#     input$publiceremove
-#     res.frame <- data.frame() 
-#     
-#     cursor <- mongo.find(mongo=mongo_service,
-#                          ns=paste(attr(mongo_service, "db"), "service", sep="."),
-#                          query=mongo.bson.empty(),
-#                          fields=mongo.bson.from.JSON('{"_id":0, "service_id":1, "description":1}'))
-#     while(mongo.cursor.next(cursor)){
-#       res <- mongo.cursor.value(cursor)
-#       res <- mongo.bson.to.list(res)
-#       res <- as.data.frame(res)
-#       res.frame <- rbind(res.frame, res)
-#     }
-#     if(nrow(res.frame) == 0)
-#       return(NULL)
-#     else
-#       return(as.list(paste(res.frame[,1], res.frame[,2], sep = " ")))
-#   })
-  ########################################################################
-#   observeEvent(input$serviceremove, function() {
-#     for(data in input$servicelist){
-#       bson <- mongo.bson.buffer.create()
-#       mongo.bson.buffer.append(bson, "service_id", unlist(strsplit(data, split = " "))[1])
-#       bson <- mongo.bson.from.buffer(bson)
-#       
-#       mongo.remove(mongo_service, paste(attr(mongo_service, "db"), "service", sep = "."), bson)
-#       
-#     }
-#   })
 observeEvent(input$serviceremove, function() {
-  msg <- list()
-  list <- c()
-  for(data in input$servicelist){
-    list <- union(list, unlist(strsplit(data, " "))[1])
-    print(list)
+  key <- getAllData(mongo_db, "key")
+  key <- as.character(key[1, 1])
+  
+  workermsg <- list()
+  workermsg$type <- "fire"
+  topic <- paste(key, "PDRemove", sep = "/")
+  
+  .jinit("www/MQTTPublisher.jar")
+  mqtt <- .jnew("mqtt/MqttSend")
+  
+  for(serviceid in input$servicelist){
+    
+    workermsg$worker <- unlist(strsplit(serviceid, split = " "))[1]
+    mqtt$SEND(HOST, "1883", topic, toJSON(workermsg))
+    workermsg$worker <- NULL
   }
-  msg$type <- "fire"
-  msg$id <- list
-  print(toJSON(msg))
+
 })
+  
   
   
   
@@ -398,7 +305,6 @@ observeEvent(input$serviceremove, function() {
     if (is.null(input$dbselect))
       return()
     
-#     set <- unlist(strsplit(input$dbselect, split=".", fixed=TRUE))[2]
     set <- get(input$dbselect)
     switch(input$dbselect,
            fluidRow(
@@ -479,16 +385,7 @@ observeEvent(input$serviceremove, function() {
                    choices = c("GA-가스센서1",
                                "GB-가스센서2",
                                "VB-진동센서",
-#                               "IR-적외선센서",
-#                               "AC-가속도센서",
-#                               "TH-온습도센서",
-#                               "MA-마그넷센서",
-#                               "DB-dB센서",
-#                               "CS-조도센서",
-#                               "FL-불꽃센서",
                                "SH-소리센서") )
-      
-      #       renderPlot({}) // 센서데이터 그래프
     })
     })
 
@@ -503,9 +400,6 @@ observeEvent(input$serviceremove, function() {
       fluidRow({  
         radioButtons("analysispublic", label=h3("공공데이터 선택"),
                    choices = JSONtostr(publicdata(), "collection", "attr" ))
-      
-      #         renderPlot({}) // 공공데이터 그래프
-        
         })
       }
     })
@@ -928,9 +822,9 @@ observeEvent(input$serviceremove, function() {
       list$period <- input$publicperiod
     
       msg <- toJSON(list)
-#      print(list)    
+      
       mqtt$SEND(HOST, "1883", topic, msg)  
-      print(topic)
+      print(paste(HOST, "1883", topic, msg, sep = "   ") )
       }
     else {
       messaging <- Progress$new()

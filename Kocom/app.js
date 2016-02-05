@@ -66,7 +66,7 @@ container.deployModule('icns.kocom~mqtt-client~0.1', mqttconf, 1, function (err)
     {
         eb.send("mqttclient", {
             "action": "subscribe",
-            "topic": "TGdata"
+            "topic": "Sensordata"
         });
         eb.send("mqttclient", {
             "action": "subscribe",
@@ -76,7 +76,10 @@ container.deployModule('icns.kocom~mqtt-client~0.1', mqttconf, 1, function (err)
             "action": "subscribe",
             "topic": "usgsCollect"
         });
-
+             eb.send("mqttclient", {
+                   "action" : "subscribe",
+                   "topic" : "PDRemove"
+             });
     }
 });
 

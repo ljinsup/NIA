@@ -1,7 +1,6 @@
 library(shiny)
 
 shinyUI(basicPage(
-#   uiOutput("CreateUI")
 
   tabsetPanel(id="tab",
 
@@ -23,7 +22,7 @@ shinyUI(basicPage(
               ),
               tabPanel("지진 데이터",
                        ############### DB UI ###############
-<<<<<<< HEAD
+
                        fluidPage(
                          column(2, offset=1,
                                 dateInput('minusgs', '데이터 범위:', value = Sys.Date()-365 )
@@ -34,10 +33,10 @@ shinyUI(basicPage(
                          column(2, offset=1,
                                 dateInput('maxusgs', '  ', value = Sys.Date() )
                          ),
-=======
-                       fixedPage(
->>>>>>> e6ef85251eb3d63c9b965fad03caf39ef5a01658
+                         
+                       fluidPage(
                          htmlOutput("USGSUI")
+                        )
                        )
               ),
               tabPanel("센서 맵",
@@ -46,6 +45,6 @@ shinyUI(basicPage(
                          uiOutput("SensorMapUI")
                        )
               )
-              
   )
-  ))
+
+))

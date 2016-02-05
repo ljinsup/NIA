@@ -2,13 +2,16 @@ package org.vertx.mods.usgs;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -20,6 +23,7 @@ import org.vertx.java.core.Handler;
 import org.vertx.java.core.eventbus.Message;
 import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -54,12 +58,18 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			final String url = "jdbc:mysql://localhost:3306/testdb";
+			
+//			final String url = "jdbc:mysql://localhost:3306/testdb";
+//			final String username = "root";
+//			final String password = "zhzha123!@#";
+			
+			// 
+			final String url = "jdbc:mysql://203.255.253.170:3306/topology";
 			final String username = "root";
-			final String password = "zhzha123!@#";
+			final String password = "qwe123";
 			
 			System.out.println("USGS Timer started *******");
-			id = vertx.setPeriodic(10 * 1000, new Handler<Long>() {
+			id = vertx.setPeriodic(60 * 60 * 1000, new Handler<Long>() {
 				@Override
 				public void handle(Long arg0) {
 					System.out.println("USGS Timer - callback *******");
@@ -84,7 +94,7 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 								System.out.println("******************************************************************");
 								
 								java.math.BigDecimal magnitude = new BigDecimal("0.0");
-								java.math.BigInteger time = new BigInteger("0");
+								long time = 0;
 								double latitude = 0;
 								double longitude = 0;
 								double depth = 0;
@@ -118,13 +128,21 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 											System.out.println(child.getNodeName() + " : " + child.getTextContent());
 											objItem.putString("updated", child.getTextContent());
 											
+											SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+											sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+											Date date = sdf.parse(child.getTextContent());
+											
+											time = date.getTime();
+											
+											//time = new BigInteger(millis);
+											
 											//
-											String[] temp;
-											String[] temp2;
-											temp = child.getTextContent().split("T");
-											temp2 = temp[0].split("-");
-											String s_time = temp2[0] + temp2[1] + temp2[2];
-											time = new BigInteger(s_time);
+//											String[] temp;
+//											String[] temp2;
+//											temp = child.getTextContent().split("T");
+//											temp2 = temp[0].split("-");
+//											String s_time = temp2[0] + temp2[1] + temp2[2];
+//											time = new BigInteger(s_time);
 											break;
 										case "georss:point":
 											System.out.println(child.getNodeName() + " : " + child.getTextContent());
@@ -140,6 +158,8 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 										case "georss:elev":
 											System.out.println(child.getNodeName() + " : " + child.getTextContent());
 											depth = Double.parseDouble(child.getTextContent());
+											depth *= -1;
+											depth /= 1000;
 											break;
 										}
 									}
@@ -181,6 +201,12 @@ public class USGS extends BusModBase implements Handler<Message<JsonObject>>{
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							} catch (SQLException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (DOMException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (ParseException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
